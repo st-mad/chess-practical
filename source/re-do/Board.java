@@ -1,4 +1,4 @@
-public class BoardEx {
+public class Board {
 
     // The following five constants were defined in the starter code (kt54)
     private static final int  DEFAULT_SIZE = 8;
@@ -20,49 +20,20 @@ public class BoardEx {
     private static final char BLACKPAWN    = 'p';
 
     private int boardsize;
-    private char[][] board;
+    private Piece[][] board;
 
     // Default constructor was provided by the starter code. Extend as needed (kt54) 
-    public BoardEx() {
+    public Board() {
         this.boardsize = DEFAULT_SIZE;
 
-        board = new char[boardsize][boardsize];
+        board = new Piece[boardsize][boardsize];
 
         // Clear all playable fields
         for(int row=0; row<boardsize; row++){
             for(int col=0; col<boardsize; col++){
-                board[row][col] = FREE;
+                board[row][col].type = FREE;
             }
         }
-        
-        //STARTING SETUP
-        for (int i = 0; i < 8; i++) {
-            board[1][i] = BLACKPAWN;
-            board[6][i] = WHITEPAWN;
-        }
-
-        board[0][0] = BLACKROOK;
-        board[0][7] = BLACKROOK;
-        board[7][0] = WHITEROOK;
-        board[7][7] = WHITEROOK;
-        
-        board[0][2] = BLACKBISHOP;
-        board[0][5] = BLACKBISHOP;
-        board[7][2] = WHITEBISHOP;
-        board[7][5] = WHITEBISHOP;
-
-        board[0][1] = BLACKKNIGHT;
-        board[0][6] = BLACKKNIGHT;
-        board[7][1] = WHITEKNIGHT;
-        board[7][6] = WHITEKNIGHT;
-
-        board[0][3] = BLACKQUEEN;
-        board[7][3] = WHITEQUEEN;
-        
-        board[0][4] = BLACKKING;
-        board[7][4] = WHITEKING;      
-        
-        board[4][3] = WHITEQUEEN;
     }
 
     // Prints the board. This method was provided with the starter code. Better not modify to ensure
@@ -83,7 +54,7 @@ public class BoardEx {
             // Print the actual board fields
             for(int col=0; col<boardsize; col++) {
                 System.out.print(" ");
-                char value = board[row][col];
+                char value = board[row][col].type;
                 if(value == FREE) {
                     System.out.print(".");
                 } else {
@@ -101,11 +72,11 @@ public class BoardEx {
         System.out.print("\n\n");
     }
 
-    public char getPiece(int row, int column) {
+    public Piece getPiece(int row, int column) {
         return board[row][column];
     }
 
-    public void setPiece(int row, int column, char piece) {
+    public void setPiece(int row, int column, Piece piece) {
         board[row][column] = piece;
     }
 }

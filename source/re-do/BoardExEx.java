@@ -1,4 +1,4 @@
-public class BoardEx {
+public class BoardExEx {
 
     // The following five constants were defined in the starter code (kt54)
     private static final int  DEFAULT_SIZE = 8;
@@ -23,7 +23,7 @@ public class BoardEx {
     private char[][] board;
 
     // Default constructor was provided by the starter code. Extend as needed (kt54) 
-    public BoardEx() {
+    public BoardExEx() {
         this.boardsize = DEFAULT_SIZE;
 
         board = new char[boardsize][boardsize];
@@ -56,10 +56,10 @@ public class BoardEx {
         board[7][1] = WHITEKNIGHT;
         board[7][6] = WHITEKNIGHT;
 
-        board[0][3] = BLACKQUEEN;
+        board[0][4] = BLACKQUEEN;
         board[7][3] = WHITEQUEEN;
         
-        board[0][4] = BLACKKING;
+        board[0][3] = BLACKKING;
         board[7][4] = WHITEKING;      
         
         board[4][3] = WHITEQUEEN;

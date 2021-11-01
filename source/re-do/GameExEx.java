@@ -1,6 +1,6 @@
 import java.util.Scanner;
 
-public class GameEx {
+public class GameExEx {
     // The following five constants were defined in the starter code (kt54)
     private static final char FREE         = '.';
     private static final char WHITEROOK    = 'R';
@@ -26,11 +26,18 @@ public class GameEx {
     private static String WHITEWINS_MSG     = "White wins!";
     private static String BLACKWINS_MSG     = "Black wins!";
 
-    private BoardEx gameBoard;
+    private BoardExEx gameBoard;
+
+    int blackKingX;
+    int blackKingY;
+    int whiteKingX;
+    int whiteKingY;
+    boolean isBlackInCheck;
+    boolean isWhiteInCheck;
 
     // Minimal constructor. Expand as needed (kt54)
-    public GameEx() {
-        gameBoard = new BoardEx();
+    public GameExEx() {
+        gameBoard = new BoardExEx();
     }
 
     // Build on this method to implement game logic.
@@ -38,19 +45,19 @@ public class GameEx {
 
         Scanner reader = new Scanner(System.in);
 
-        gameBoard = new BoardEx();
+        gameBoard = new BoardExEx();
 
-        //variables to track game state.
+        isBlackInCheck = false;
+        isWhiteInCheck = false;
         int turnCount = 1;
         String currentPlayer;
         boolean done = false;
         boolean isMoveLegal;
 
         while(!done) {
-            //prints the board
+            
             gameBoard.printBoard();
             
-            //determines whose turn it is
             if (turnCount % 2 == 1) {
                 currentPlayer = "white";
                 System.out.println(WHITEPLAYS_MSG);
@@ -58,34 +65,63 @@ public class GameEx {
                 currentPlayer = "black";
                 System.out.println(BLACKPLAYS_MSG);
             }
-
-            //takes user input
             String pos1 = reader.nextLine();
             if (pos1.equals("quit")) {
                 done = true;
                 break;
             }
             String pos2 = reader.nextLine();
-
-            //makes the user input independent of capitalisation
             pos1 = pos1.toLowerCase();
             pos2 = pos2.toLowerCase();
 
-            //converts the user input from algebraic notation to the their value in terms of integer coordinates on the board.
-            String coordinates = pos1 + pos2;
+            String coordinates = convertToCoords(pos1,pos2);
 
-            //checks the legality of the move
+            if (currentPlayer == "white" && isWhiteInCheck) {
+                
+            }
+
             isMoveLegal = isMoveLegal(coordinates,currentPlayer);
 
-            //executes the move
+            //System.out.println(isReachable((pos1.charAt(0) - 'a'), 8 - (pos1.charAt(1) - '0'), "black"));
+
             if (isMoveLegal) {
                 movePiece(coordinates);
-                turnCount++;
-            } else {
+            }
+
+            if(isMoveLegal == false) {
                 System.out.println(ILLEGALMOVE_MSG);
             }
 
-            //naive win condition.
+            if(isMoveLegal == true) {
+                turnCount++;
+            }
+
+            if (currentPlayer == "white" && isWhiteInCheck) {
+                if (isMoveLegal == true) {
+                    if (isInCheck(currentPlayer)) {
+                        turnCount--;
+                        String inverseCoordinates = "" + coordinates.charAt(2) + coordinates.charAt(3) + coordinates.charAt(0) + coordinates.charAt(1);
+                        System.out.println(inverseCoordinates);
+                        movePiece(inverseCoordinates);
+                    }
+                }
+            }
+
+            if (currentPlayer == "black" && isBlackInCheck) {
+                if (isMoveLegal == true) {
+                    if (isInCheck(currentPlayer)) {
+                        turnCount--;
+                        String inverseCoordinates = "" + coordinates.charAt(2) + coordinates.charAt(3) + coordinates.charAt(0) + coordinates.charAt(1);
+                        System.out.println(inverseCoordinates);
+                        movePiece(inverseCoordinates);
+                    }
+                }
+            }
+
+            isBlackInCheck = isInCheck("black");
+            isWhiteInCheck = isInCheck("white");
+
+ 
             switch(checkGameOver()) {
                 case 'b':
                     gameBoard.printBoard();
@@ -104,7 +140,6 @@ public class GameEx {
     }
 
     public String convertToCoords(String initialPosition, String targetPosition) {
-        //converts algebraic notation to a String of chars representing integer coordinates on the game plane. (a4b4) -> (0414)
         String initialPositionX = "" + ((int) initialPosition.charAt(0) - 'a');
         String initialPositionY = "" + (8 - ((int) initialPosition.charAt(1) - '0'));
         String targetPositionX = "" + ((int) targetPosition.charAt(0) - 'a');
@@ -115,26 +150,24 @@ public class GameEx {
     }
 
     public boolean isMoveLegal(String coordinates, String currentPlayer) {
-        //components of move validity
         boolean isPathValid = false;
         boolean isRuleBound = false;
         boolean isColourCorrect = false;
         boolean isTargetValid = false;
         boolean isOutofBounds = false;
         
-        //converts algebraic notation into 0-7 inclusive x,y coordinates
-        int initialPositionX = (int) coordinates.charAt(0) - 'a';
-        int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
-        int targetPositionX = (int) coordinates.charAt(2) - 'a';
-        int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
+        /*//converts algebraic notation into 0-7 inclusive x,y coordinates
+        int initialPositionX = (int) initialPosition.charAt(0) - 97;
+        int initialPositionY = 8 - ((int) initialPosition.charAt(1) - 48);
+        int targetPositionX = (int) targetPosition.charAt(0) - 97;
+        int targetPositionY = 8 - ((int) targetPosition.charAt(1) - 48);*/
 
-        /*//converts String of integer characters to ints
         int initialPositionX = (int)coordinates.charAt(0) - '0';
         int initialPositionY = (int)coordinates.charAt(1) - '0';
         int targetPositionX = (int)coordinates.charAt(2) - '0';
-        int targetPositionY = (int)coordinates.charAt(3) - '0';*/
+        int targetPositionY = (int)coordinates.charAt(3) - '0';
 
-        //checks if the move is out of bounds
+        //System.out.println(initialPositionX + " " + initialPositionY + " " + targetPositionX + " " + targetPositionY);//debug code
         isOutofBounds = (targetPositionX < 0 || targetPositionX >= 8) | (initialPositionX < 0 || initialPositionX >= 8) |
                         (targetPositionY < 0 || targetPositionY >= 8) | (initialPositionY < 0 || initialPositionY >= 8); 
 
@@ -142,7 +175,7 @@ public class GameEx {
             return false;
         }
         
-        //checks if the move is rule bound to the pieces moveset
+        //checks if the move is rule bound
         switch(gameBoard.getPiece(initialPositionY,initialPositionX)) {
             case BLACKBISHOP:
                 //checks paths
@@ -169,34 +202,26 @@ public class GameEx {
                 isColourCorrect = currentPlayer.equals("white");
                 break;
             case BLACKPAWN:
-                isPathValid = true; //bypasses the pathchecking
-
-                //diagonal capture if the target is white while the main piece is black.
+                isPathValid = true;
                 if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY + 1) {
                     isRuleBound = isWhite(gameBoard.getPiece(targetPositionY,targetPositionX));
                 }
-                //if the target is empty, only allow the pawn to move 1 square down (because its black).
                 else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY + 1){
                     isRuleBound = (gameBoard.getPiece(targetPositionY,targetPositionX) == '.');
                 }
-                //if the initialPositionY is the initial position of the pawn, then it also allows you to move down 2 squares
                 else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY + 2){
                     isRuleBound = (gameBoard.getPiece(targetPositionY,targetPositionX) == '.') && initialPositionY == 1;
                 }
                 isColourCorrect = currentPlayer.equals("black");
                 break;
             case WHITEPAWN:
-                isPathValid = true;//bypasses the pathchecking
-
-                //diagonal capture if the target is white while the main piece is black.
+                isPathValid = true;
                 if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY - 1) {
                     isRuleBound = isBlack(gameBoard.getPiece(targetPositionY,targetPositionX));
                 }
-                //if the target is empty, only allow the pawn to move 1 square up (because its white).
                 else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY - 1){
                     isRuleBound = (gameBoard.getPiece(targetPositionY,targetPositionX) == '.');
                 } 
-                //if the initialPositionY is the initial position of the pawn, then it also allows you to move up 2 squares
                 else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY - 2){
                     isRuleBound = (gameBoard.getPiece(targetPositionY,targetPositionX) == '.') && initialPositionY == 6;
                 }
@@ -205,8 +230,6 @@ public class GameEx {
             case BLACKKNIGHT:
                 //checks path
                 isPathValid = true;
-
-                //rule set for knights
                 isRuleBound = (Math.abs(targetPositionX - initialPositionX) == 1 && Math.abs(targetPositionY - initialPositionY) == 2) || 
                               (Math.abs(targetPositionX - initialPositionX) == 2 && Math.abs(targetPositionY - initialPositionY) == 1);
                 isColourCorrect = currentPlayer.equals("black");
@@ -214,8 +237,6 @@ public class GameEx {
             case WHITEKNIGHT:
                 //checks paths
                 isPathValid = true;
-
-                //rule set for knights
                 isRuleBound = (Math.abs(targetPositionX - initialPositionX) == 1 && Math.abs(targetPositionY - initialPositionY) == 2) || 
                               (Math.abs(targetPositionX - initialPositionX) == 2 && Math.abs(targetPositionY - initialPositionY) == 1);
                 isColourCorrect = currentPlayer.equals("white");
@@ -223,8 +244,6 @@ public class GameEx {
             case BLACKQUEEN:
                 //checks paths
                 isPathValid = checkPath(initialPositionX,initialPositionY,targetPositionX,targetPositionY);
-
-                //combines the rules for bishop and rook
                 isRuleBound = (Math.abs(targetPositionY-initialPositionY) == Math.abs(targetPositionX-initialPositionX)) || 
                               (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
                 isColourCorrect = currentPlayer.equals("black");
@@ -232,8 +251,6 @@ public class GameEx {
             case WHITEQUEEN:
                 //checks path
                 isPathValid = checkPath(initialPositionX,initialPositionY,targetPositionX,targetPositionY);
-
-                //combines the rules for bishop and rook
                 isRuleBound = (Math.abs(targetPositionY-initialPositionY) == Math.abs(targetPositionX-initialPositionX)) || 
                               (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
                 isColourCorrect = currentPlayer.equals("white");
@@ -261,16 +278,28 @@ public class GameEx {
             isTargetValid = true;
         }
 
+        //System.out.println("" + isPathValid + isRuleBound + isColourCorrect + isTargetValid);//debug line
         boolean isMoveValid = isPathValid && isRuleBound && isColourCorrect && isTargetValid;
         return isMoveValid;
     }
 
     public void movePiece(String coordinates) {
-        //converts integer string into ints
-        int initialPositionX = (int) coordinates.charAt(0) - 'a';
-        int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
-        int targetPositionX = (int) coordinates.charAt(2) - 'a';
-        int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
+        //converts algebraic notation into 0-7 inclusive x,y coordinates
+        int initialPositionX = (int)coordinates.charAt(0) - '0';
+        int initialPositionY = (int)coordinates.charAt(1) - '0';
+        int targetPositionX = (int)coordinates.charAt(2) - '0';
+        int targetPositionY = (int)coordinates.charAt(3) - '0';
+        
+        if (gameBoard.getPiece(initialPositionY, initialPositionX) == 'k') {
+            blackKingX = targetPositionX;
+            blackKingY = targetPositionY;
+        }
+
+        if (gameBoard.getPiece(initialPositionY, initialPositionX) == 'K') {
+            whiteKingX = targetPositionX;
+            whiteKingY = targetPositionY;
+        }
+
 
         char buffer = gameBoard.getPiece(initialPositionY,initialPositionX);
         gameBoard.setPiece(targetPositionY, targetPositionX, buffer);
@@ -278,7 +307,7 @@ public class GameEx {
     }
 
     public char checkGameOver() {
-        //implement checks later.
+        //implement checks later. For now its classic chess.
         int numberOfBlackPieces = 0;
         int numberOfWhitePieces = 0;
         
@@ -299,6 +328,7 @@ public class GameEx {
     }
 
     public boolean checkPath(int x1, int y1, int x2, int y2) {
+        
         //I have a slight suspicion that this is overcomplicated, and might not be the best solution.
         //Increment X,Y determine the direction that the target square is from the initial square.
         int incrementX = 0;
@@ -490,6 +520,24 @@ public class GameEx {
                         }
                     }
                 }
+            }
+        }
+
+        return result;
+    }
+
+    public boolean isInCheck(String currentPlayer) {
+        boolean result = false;
+
+        if (currentPlayer.equals("black")) {
+            if (isReachable(blackKingX, 8 - blackKingY, "white")) {
+                result = true;
+            }
+        }
+
+        if (currentPlayer.equals("white")) {
+            if (isReachable(whiteKingX, 8 - whiteKingY, "black")) {
+                result = true;
             }
         }
 

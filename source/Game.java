@@ -39,15 +39,17 @@ public class Game {
 
         gameBoard = new Board();
 
+        //variables to track game state.
         int turnCount = 1;
         String currentPlayer;
         boolean done = false;
         boolean isMoveLegal;
 
         while(!done) {
-            
+            //prints the board
             gameBoard.printBoard();
             
+            //determines whose turn it is
             if (turnCount % 2 == 1) {
                 currentPlayer = "white";
                 System.out.println(WHITEPLAYS_MSG);
@@ -61,19 +63,21 @@ public class Game {
                 break;
             }
             String pos2 = reader.nextLine();
+
+            //This is to make sure input is independent of capitalisation.
             pos1 = pos1.toLowerCase();
             pos2 = pos2.toLowerCase();
 
+
+            //checks the legality of the move and executes it
             isMoveLegal = movePiece(pos1,pos2,currentPlayer); 
 
             if(isMoveLegal == false){
                 System.out.println(ILLEGALMOVE_MSG);
-            }
-
-            if(isMoveLegal == true) {
+            } else {
                 turnCount++;
             }
- 
+            
             switch(checkGameOver()) {
                 case 'b':
                     gameBoard.printBoard();
@@ -92,6 +96,9 @@ public class Game {
     }
 
     public boolean movePiece(String initialPosition, String targetPosition, String currentPlayer) {
+        //This method checks the legality of the move and also moves the piece. This functionality is split into two methods for the extension.
+
+        //different flags for components of move validity.
         boolean isRuleBound = false;
         boolean isColourCorrect = false;
         boolean isTargetValid = false;
@@ -99,12 +106,12 @@ public class Game {
         boolean isPathValid = false;
         
         //converts algebraic notation into 0-7 inclusive x,y coordinates
-        int initialPositionX = (int) initialPosition.charAt(0) - 97;
-        int initialPositionY = 8 - ((int) initialPosition.charAt(1) - 48);
-        int targetPositionX = (int) targetPosition.charAt(0) - 97;
-        int targetPositionY = 8 - ((int) targetPosition.charAt(1) - 48);
+        int initialPositionX = (int) initialPosition.charAt(0) - 'a';
+        int initialPositionY = 8 - ((int) initialPosition.charAt(1) - '0');
+        int targetPositionX = (int) targetPosition.charAt(0) - 'a';
+        int targetPositionY = 8 - ((int) targetPosition.charAt(1) - '0');
 
-        //System.out.println(initialPositionX + " " + initialPositionY + " " + targetPositionX + " " + targetPositionY);//debug code
+        //checks if the move is trying to go out of bounds.
         isOutofBounds = (targetPositionX < 0 || targetPositionX >= 8) | (initialPositionX < 0 || initialPositionX >= 8) |
                         (targetPositionY < 0 || targetPositionY >= 8) | (initialPositionY < 0 || initialPositionY >= 8); 
 
@@ -113,7 +120,7 @@ public class Game {
         }
         
         
-        //checks if the move is rule bound
+        //checks if the move is rule bound.i.e. valid for the pieces moveset.
         switch(gameBoard.getPiece(initialPositionY,initialPositionX)) {
             case BLACKBISHOP:
                 //check paths
@@ -141,7 +148,7 @@ public class Game {
                 break;
         }
 
-        //captures
+        //checks if the piece on target position is capturable.
         if (currentPlayer.equals("black") && isWhite(gameBoard.getPiece(targetPositionY,targetPositionX))) {
             isTargetValid = true;
         } else if (currentPlayer.equals("white") && isBlack(gameBoard.getPiece(targetPositionY,targetPositionX))) {
@@ -150,10 +157,11 @@ public class Game {
             isTargetValid = true;
         }
 
-        //System.out.println("" + isPathValid + isRuleBound + isColourCorrect + isTargetValid);//debug line
+
+        //puts all the components together to determine isMoveValid
         boolean isMoveValid = isPathValid && isRuleBound && isColourCorrect && isTargetValid;
 
-        //executes the move
+        //executes the move.
         if (isMoveValid) {
             char buffer = gameBoard.getPiece(initialPositionY,initialPositionX);
             gameBoard.setPiece(targetPositionY, targetPositionX, buffer);
@@ -163,7 +171,8 @@ public class Game {
     }
 
     public char checkGameOver() {
-        //Naive win condition, where winning means the other player has no pieces
+        //Naive win condition, where winning means the other player has no pieces.
+        //Counts up the number of pieces of each colour.
         int numberOfBlackPieces = 0;
         int numberOfWhitePieces = 0;
         
@@ -184,7 +193,6 @@ public class Game {
     }
 
     public boolean checkPath(int x1, int y1, int x2, int y2) {
-        
         //I have a slight suspicion that this is overcomplicated, and might not be the best solution.
         //Increment X,Y determine the direction that the target square is from the initial square.
         int incrementX = 0;
@@ -199,8 +207,6 @@ public class Game {
         int i = x1 + incrementX;
         int j = y1 + incrementY;
         while ((i != x2) || (j != y2)) {
-
-            //System.out.println(y2 + "," + j + " : " + x2 + "," + i + " : "+ gameBoard.getPiece(j,i)); 
             if (gameBoard.getPiece(j,i) != '.') {
                 return false;
             }
@@ -208,7 +214,6 @@ public class Game {
             if (i != x2){i = i + incrementX;}
             if (j != y2){j = j + incrementY;}
         }
-        
         return true;
     }
 
