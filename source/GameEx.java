@@ -52,6 +52,7 @@ public class GameEx {
         boolean done = false;
 
         while (!done) {
+
             boolean isMoveLegal = false;
             // prints the board
             gameBoard.printBoard();
@@ -59,25 +60,47 @@ public class GameEx {
             // determines whose turn it is
             if (turnCount % 2 == 1) {
                 currentPlayer = whitePlayer;
-                System.out.println(WHITEPLAYS_MSG);
             } else {
                 currentPlayer = blackPlayer;
-                System.out.println(BLACKPLAYS_MSG);
             }
 
-            updateMoveSets();
-            // debug code
-            System.out.println("total legal moves: " + whitePlayer.moveSet.size() + " : " + blackPlayer.moveSet.size());
+            // update the available pseudo legal moves.
+            updateMoveSet(gameBoard);
 
             // check if current player is in check
             currentPlayer.isInCheck = isInCheck(currentPlayer);
-            System.out.println(currentPlayer.isInCheck + " : " + currentPlayer.kingX + "," + currentPlayer.kingY + " : "
-                    + currentPlayer.moveSet.size());
 
-            //restrict moves in check
+            // restrict moves in check
+            restrictPseudoLegalMoves(currentPlayer, gameBoard);
 
+            // win condition.
+            String loser = checkGameOver(currentPlayer);
+            switch (loser.charAt(0)) {
+            case 'w':
+                gameBoard.printBoard();
+                System.out.println(BLACKWINS_MSG);
+                done = true;
+                break;
+            case 'b':
+                gameBoard.printBoard();
+                System.out.println(WHITEWINS_MSG);
+                done = true;
+                break;
+            case 's':
+                gameBoard.printBoard();
+                System.out.println("Stalemate");
+                done = true;
+                break;
+
+            }
 
             // takes user input
+            if (currentPlayer.colour.equals("white")) {
+                System.out.println(WHITEPLAYS_MSG);
+            } else {
+                System.out.println(BLACKPLAYS_MSG);
+            }
+
             String pos1 = reader.nextLine();
             if (pos1.equals("quit")) {
                 done = true;
@@ -85,19 +108,9 @@ public class GameEx {
             }
             String pos2 = reader.nextLine();
 
-            // makes the user input independent of capitalisation
-            pos1 = pos1.toLowerCase();
-            pos2 = pos2.toLowerCase();
-
-            // converts the user input from algebraic notation to the their value in terms
-            // of integer coordinates on the board.
+            // makes the user input independent of capitalisations
             String coordinates = pos1 + pos2;
-
-            // checking to avoid index out of bounds exceptions
-            /*
-             * if (coordinates.length() == 4) { // checks the legality of the move
-             * isMoveLegal = isMoveLegal(coordinates, currentPlayer); }
-             */
+            coordinates = coordinates.toLowerCase();
 
             for (int i = 0; i < currentPlayer.moveSet.size(); i++) {
                 if (coordinates.equals(currentPlayer.moveSet.get(i))) {
@@ -107,25 +120,10 @@ public class GameEx {
 
             // executes the move
             if (isMoveLegal) {
-                movePiece(coordinates);
+                movePiece(coordinates, gameBoard);
                 turnCount++;
             } else {
                 System.out.println(ILLEGALMOVE_MSG);
-            }
-
-            // naive win condition.
-            switch (checkGameOver()) {
-            case 'b':
-                gameBoard.printBoard();
-                System.out.println(BLACKWINS_MSG);
-                done = true;
-                break;
-            case 'w':
-                gameBoard.printBoard();
-                System.out.println(WHITEWINS_MSG);
-                done = true;
-                break;
-
             }
 
         }
@@ -143,7 +141,7 @@ public class GameEx {
         return result;
     }
 
-    public boolean isMoveLegal(String coordinates, String currentPlayer) {
+    public boolean isMoveLegal(String coordinates, String currentPlayer, BoardEx board) {
         // components of move validity
         boolean isPathValid = false;
         boolean isRuleBound = false;
@@ -166,30 +164,30 @@ public class GameEx {
         }
 
         // checks if the move is rule bound to the pieces moveset
-        switch (gameBoard.getPiece(initialPositionY, initialPositionX)) {
+        switch (board.getPiece(initialPositionY, initialPositionX)) {
         case BLACKBISHOP:
             // checks paths
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY);
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
             isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math
                     .abs(targetPositionX - initialPositionX));
             isColourCorrect = currentPlayer.equals("black");
             break;
         case WHITEBISHOP:
             // checks path
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY);
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
             isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math
                     .abs(targetPositionX - initialPositionX));
             isColourCorrect = currentPlayer.equals("white");
             break;
         case BLACKROOK:
             // checks path
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY);
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
             isRuleBound = (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
             isColourCorrect = currentPlayer.equals("black");
             break;
         case WHITEROOK:
             // checks paths
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY);
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
             isRuleBound = (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
             isColourCorrect = currentPlayer.equals("white");
             break;
@@ -198,17 +196,17 @@ public class GameEx {
 
             // diagonal capture if the target is white while the main piece is black.
             if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY + 1) {
-                isRuleBound = isWhite(gameBoard.getPiece(targetPositionY, targetPositionX));
+                isRuleBound = isWhite(board.getPiece(targetPositionY, targetPositionX));
             }
             // if the target is empty, only allow the pawn to move 1 square down (because
             // its black).
             else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY + 1) {
-                isRuleBound = (gameBoard.getPiece(targetPositionY, targetPositionX) == '.');
+                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.');
             }
             // if the initialPositionY is the initial position of the pawn, then it also
             // allows you to move down 2 squares
             else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY + 2) {
-                isRuleBound = (gameBoard.getPiece(targetPositionY, targetPositionX) == '.') && initialPositionY == 1;
+                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.') && initialPositionY == 1;
             }
             isColourCorrect = currentPlayer.equals("black");
             break;
@@ -217,17 +215,17 @@ public class GameEx {
 
             // diagonal capture if the target is white while the main piece is black.
             if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY - 1) {
-                isRuleBound = isBlack(gameBoard.getPiece(targetPositionY, targetPositionX));
+                isRuleBound = isBlack(board.getPiece(targetPositionY, targetPositionX));
             }
             // if the target is empty, only allow the pawn to move 1 square up (because its
             // white).
             else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY - 1) {
-                isRuleBound = (gameBoard.getPiece(targetPositionY, targetPositionX) == '.');
+                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.');
             }
             // if the initialPositionY is the initial position of the pawn, then it also
             // allows you to move up 2 squares
             else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY - 2) {
-                isRuleBound = (gameBoard.getPiece(targetPositionY, targetPositionX) == '.') && initialPositionY == 6;
+                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.') && initialPositionY == 6;
             }
             isColourCorrect = currentPlayer.equals("white");
             break;
@@ -255,7 +253,7 @@ public class GameEx {
             break;
         case BLACKQUEEN:
             // checks paths
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY);
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
 
             // combines the rules for bishop and rook
             isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math.abs(targetPositionX - initialPositionX))
@@ -264,7 +262,7 @@ public class GameEx {
             break;
         case WHITEQUEEN:
             // checks path
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY);
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
 
             // combines the rules for bishop and rook
             isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math.abs(targetPositionX - initialPositionX))
@@ -273,7 +271,7 @@ public class GameEx {
             break;
         case BLACKKING:
             // checks paths
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY);
+            isPathValid = true;
             isRuleBound = (Math.abs(targetPositionX - initialPositionX) == 1
                     || Math.abs(targetPositionY - initialPositionY) == 1);
             isColourCorrect = currentPlayer.equals("black");
@@ -288,11 +286,11 @@ public class GameEx {
         }
 
         // captures
-        if (currentPlayer.equals("black") && isWhite(gameBoard.getPiece(targetPositionY, targetPositionX))) {
+        if (currentPlayer.equals("black") && isWhite(board.getPiece(targetPositionY, targetPositionX))) {
             isTargetValid = true;
-        } else if (currentPlayer.equals("white") && isBlack(gameBoard.getPiece(targetPositionY, targetPositionX))) {
+        } else if (currentPlayer.equals("white") && isBlack(board.getPiece(targetPositionY, targetPositionX))) {
             isTargetValid = true;
-        } else if (gameBoard.getPiece(targetPositionY, targetPositionX) == '.') {
+        } else if (board.getPiece(targetPositionY, targetPositionX) == '.') {
             isTargetValid = true;
         }
 
@@ -303,7 +301,7 @@ public class GameEx {
         return isMoveValid;
     }
 
-    public void movePiece(String coordinates) {
+    public void movePiece(String coordinates, BoardEx board) {
         // converts integer string into ints
         int initialPositionX = (int) coordinates.charAt(0) - 'a';
         int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
@@ -311,48 +309,35 @@ public class GameEx {
         int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
 
         // tracks position of the king in a field.
-        if (gameBoard.getPiece(initialPositionY, initialPositionX) == 'k') {
+        if (board.getPiece(initialPositionY, initialPositionX) == 'k') {
             blackPlayer.kingX = targetPositionX;
             blackPlayer.kingY = targetPositionY;
         }
 
         // tracks position of the king in a field.
-        if (gameBoard.getPiece(initialPositionY, initialPositionX) == 'K') {
+        if (board.getPiece(initialPositionY, initialPositionX) == 'K') {
             whitePlayer.kingX = targetPositionX;
             whitePlayer.kingY = targetPositionY;
         }
 
         // actual swap
-        char buffer = gameBoard.getPiece(initialPositionY, initialPositionX);
-        gameBoard.setPiece(targetPositionY, targetPositionX, buffer);
-        gameBoard.setPiece(initialPositionY, initialPositionX, FREE);
+        char buffer = board.getPiece(initialPositionY, initialPositionX);
+        board.setPiece(targetPositionY, targetPositionX, buffer);
+        board.setPiece(initialPositionY, initialPositionX, FREE);
 
     }
 
-    public char checkGameOver() {
-        // implement checks later.
-        int numberOfBlackPieces = 0;
-        int numberOfWhitePieces = 0;
-
-        for (int i = 0; i < 8; i++) {
-            for (int j = 0; j < 8; j++) {
-                char temp = gameBoard.getPiece(i, j);
-                if (temp != '.' && Character.isUpperCase(temp)) {
-                    numberOfWhitePieces++;
-                } else if (temp != '.' && Character.isLowerCase(temp)) {
-                    numberOfBlackPieces++;
-                }
-            }
+    public String checkGameOver(PlayerEx currentPlayer) {
+        if (currentPlayer.moveSet.size() == 0 && currentPlayer.isInCheck == true) {
+            return currentPlayer.colour;
+        } else if (currentPlayer.moveSet.size() == 0 && currentPlayer.isInCheck == false) {
+            return "stalemate";
         }
 
-        if (numberOfBlackPieces == 0)
-            return 'w';
-        if (numberOfWhitePieces == 0)
-            return 'b';
-        return 'n';
+        return "none";
     }
 
-    public boolean checkPath(int x1, int y1, int x2, int y2) {
+    public boolean checkPath(int x1, int y1, int x2, int y2, BoardEx board) {
         // I have a slight suspicion that this is overcomplicated, and might not be the
         // best solution.
         // Increment X,Y determine the direction that the target square is from the
@@ -378,7 +363,7 @@ public class GameEx {
 
             // System.out.println(y2 + "," + j + " : " + x2 + "," + i + " : "+
             // gameBoard.getPiece(j,i)); debug
-            if (gameBoard.getPiece(j, i) != '.') {
+            if (board.getPiece(j, i) != '.') {
                 return false;
             }
 
@@ -407,215 +392,45 @@ public class GameEx {
         return false;
     }
 
-    public boolean isReachable(int x, int y, String colour) {
-        // I understand that his approach is very inefficient, but with the current
-        // structure of my code, I can't think of any better way to do it.
-        boolean result = false;
-        String coords;
-        System.out.println(x + " " + y);
-
-        char BISHOP = 'b';
-        char QUEEN = 'q';
-        char ROOK = 'r';
-        char KNIGHT = 'k';
-        char PAWN = 'p';
-
-        if (colour.equals("white")) {
-            BISHOP = 'B';
-            QUEEN = 'Q';
-            ROOK = 'R';
-            KNIGHT = 'K';
-            PAWN = 'P';
-        }
-        // check diagonals
-
-        // diag 1
-        // for the diagonal going from bottom left to top right, the equation in terms
-        // of game coordinates should be y = -x + (x1 + y1), where (x1.y1) is the point
-        // the line passes through.
-        // the intersections of this line with the bottom of the board occurs when y =
-        // 7. so the starting point will be y = 7 and x = -7 + (x1 + y1)
-        int xCounter1 = -7 + x + y;
-        int yCounter1 = 7;
-
-        while (xCounter1 != 8 && xCounter1 != -1 && yCounter1 != 8 && yCounter1 != -1) {
-            if ((xCounter1 != x && yCounter1 != y) && (gameBoard.getPiece(yCounter1, xCounter1) == BISHOP
-                    || gameBoard.getPiece(yCounter1, xCounter1) == QUEEN)) {
-                coords = convertToAlgebraic(xCounter1, yCounter1, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-            xCounter1++;
-            yCounter1--;
-        }
-
-        // diag 2
-        // same theory as for the last one, but here the line is of slope +1 and it
-        // intersects with y = 0
-        int xCounter2 = 0;
-        int yCounter2 = y - x;
-        while (xCounter2 != 8 && xCounter2 != -1 && yCounter2 != 8 && yCounter2 != -1) {
-            if ((xCounter2 != x && yCounter2 != y) && (gameBoard.getPiece(yCounter2, xCounter2) == BISHOP
-                    || gameBoard.getPiece(yCounter2, xCounter2) == QUEEN)) {
-                coords = convertToAlgebraic(xCounter2, yCounter2, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-            xCounter2++;
-            yCounter2++;
-        }
-
-        // check horizontals
-
-        // x axis:
-        for (int temp = 0; temp < 8; temp++) {
-            if (temp != y && (gameBoard.getPiece(y, temp) == ROOK || gameBoard.getPiece(y, temp) == QUEEN)) {
-                coords = convertToAlgebraic(temp, y, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-        }
-
-        // y axis:
-        for (int temp = 0; temp < 8; temp++) {
-            if (temp != x && (gameBoard.getPiece(temp, x) == ROOK || gameBoard.getPiece(temp, x) == QUEEN)) {
-                coords = convertToAlgebraic(x, temp, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-        }
-
-        // horses
-
-        // I apologise for my god-awful formatting.
-        int[] temp = { -2, -1, 1, 2 };
-
-        for (int i = 0; i < temp.length; i++) {
-            for (int j = 0; j < temp.length; j++) {
-                if ((y + temp[j] != 8) && (x + temp[i] != 8) && (y + temp[j] != -1) && (x + temp[i] != -1)) {
-                    if (gameBoard.getPiece(y + temp[j], x + temp[i]) == KNIGHT) {
-                        coords = convertToAlgebraic(x + temp[i], y + temp[j], x, y);
-                        if (isMoveLegal(coords, colour)) {
-                            result = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        // pawns
-
-        // checks for friendly pawns. i.e. reachablity without capture
-        if (colour == "white" && isWhite(gameBoard.getPiece(y, x))) {
-            if (((y + 1 != 8) && (y + 1 != -1) && (x != 8) && (x != -1)) && (gameBoard.getPiece(y + 1, x) == PAWN)) {
-                coords = convertToAlgebraic(x, y + 1, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-            if (((y + 2 != 8) && (y + 2 != -1) && (x != 8) && (x != -1)) && (gameBoard.getPiece(y + 2, x) == PAWN)) {
-                coords = convertToAlgebraic(x, y + 2, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-        } else if (colour == "black" && isBlack(gameBoard.getPiece(y, x))) {
-            if (((y - 1 != 8) && (y - 1 != -1) && (x != 8) && (x != -1)) && (gameBoard.getPiece(y - 1, x) == PAWN)) {
-                coords = convertToAlgebraic(x, y - 1, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-            if (((y - 2 != 8) && (y - 2 != -1) && (x != 8) && (x != -1)) && (gameBoard.getPiece(y - 2, x) == PAWN)) {
-                coords = convertToAlgebraic(x, y - 2, x, y);
-                if (isMoveLegal(coords, colour)) {
-                    result = true;
-                }
-            }
-        }
-
-        // checks for enemy pawns. i.e. reachablity through capture
-        int[] tempArr = { -1, 1 };
-        if (colour == "white" && !isWhite(gameBoard.getPiece(y, x))) {
-            for (int i = 0; i < tempArr.length; i++) {
-                for (int j = 0; j < tempArr.length; j++) {
-                    if (((y + tempArr[j] != 8) && (y + tempArr[j] != -1) && (x + tempArr[i] != 8)
-                            && (x + tempArr[i] != -1))
-                            && (gameBoard.getPiece(y + tempArr[j], x + tempArr[i]) == PAWN)) {
-                        coords = convertToAlgebraic(x + tempArr[i], y + tempArr[j], x, y);
-                        if (isMoveLegal(coords, colour)) {
-                            result = true;
-                        }
-                    }
-                }
-            }
-        } else if (colour == "black" && !isBlack(gameBoard.getPiece(y, x))) {
-            for (int i = 0; i < tempArr.length; i++) {
-                for (int j = 0; j < tempArr.length; j++) {
-                    if (((y + tempArr[j] != 8) && (y + tempArr[j] != -1) && (x + tempArr[i] != 8)
-                            && (x + tempArr[i] != -1))
-                            && (gameBoard.getPiece(y + tempArr[j], x + tempArr[i]) == PAWN)) {
-                        coords = convertToAlgebraic(x + tempArr[i], y + tempArr[j], x, y);
-                        if (isMoveLegal(coords, colour)) {
-                            result = true;
-                        }
-                    }
-                }
-            }
-        }
-
-        return result;
-    }
-
     public boolean isInCheck(PlayerEx currentPlayer) {
         boolean result = false;
 
-        if (currentPlayer.colour.equals("black")) {
-            for (int i = 0; i < whitePlayer.moveSet.size(); i++) {
-                String move = whitePlayer.moveSet.get(i);
-                int targetX = move.charAt(2) - 'a';
-                int targetY = 8 - (move.charAt(3) - '0');
+        PlayerEx otherPlayer = new PlayerEx();
+        if (currentPlayer.colour.equals("white")) {
+            otherPlayer = blackPlayer;
+        } else {
+            otherPlayer = whitePlayer;
+        }
 
-                if (targetX == blackPlayer.kingX && targetY == blackPlayer.kingY) {
-                    result = true;
-                }
-            }
-        } else if (currentPlayer.colour.equals("white")) {
-            for (int i = 0; i < blackPlayer.moveSet.size(); i++) {
-                String move = blackPlayer.moveSet.get(i);
-                int targetX = move.charAt(2) - 'a';
-                int targetY = 8 - (move.charAt(3) - '0');
-                // debug
-                // System.out.println("-> " + targetX + "," + targetY + "||" +
-                // currentPlayer.kingX + "," + currentPlayer.kingY + "||" + whitePlayer.kingX +
-                // "," + whitePlayer.kingY);
-                if (targetX == whitePlayer.kingX && targetY == whitePlayer.kingY) {
-                    result = true;
-                }
+        // iterates through other player's moveset and finds a move that can capture the
+        // king
+        for (int i = 0; i < otherPlayer.moveSet.size(); i++) {
+            String move = otherPlayer.moveSet.get(i);
+            int targetX = move.charAt(2) - 'a';
+            int targetY = 8 - (move.charAt(3) - '0');
+
+            if (targetX == currentPlayer.kingX && targetY == currentPlayer.kingY) {
+                result = true;
             }
         }
 
         return result;
     }
 
-    public ArrayList<String> generateLegalMoves(int x, int y) {
+    public ArrayList<String> generateLegalMoves(int x, int y, BoardEx board) {
         ArrayList<String> legalMoves = new ArrayList<String>();
         int xTarget;
         int yTarget;
         String coords;
 
-        switch (gameBoard.getPiece(y, x)) {
+        switch (board.getPiece(y, x)) {
         case BLACKBISHOP:
             xTarget = x;
             yTarget = y;
 
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -626,7 +441,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -637,7 +452,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -648,7 +463,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -662,7 +477,7 @@ public class GameEx {
 
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -673,7 +488,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -684,7 +499,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -695,7 +510,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -707,7 +522,7 @@ public class GameEx {
             // x axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, i, y);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -715,7 +530,7 @@ public class GameEx {
             // y axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, x, i);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -725,7 +540,7 @@ public class GameEx {
             // x axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, i, y);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -733,7 +548,7 @@ public class GameEx {
             // y axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, x, i);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -745,7 +560,7 @@ public class GameEx {
 
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -756,7 +571,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -767,7 +582,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -778,7 +593,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -788,7 +603,7 @@ public class GameEx {
             // x axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, i, y);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -796,7 +611,7 @@ public class GameEx {
             // y axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, x, i);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -809,7 +624,7 @@ public class GameEx {
 
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -820,7 +635,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -831,7 +646,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget++;
@@ -842,7 +657,7 @@ public class GameEx {
             yTarget = y;
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 xTarget--;
@@ -852,7 +667,7 @@ public class GameEx {
             // x axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, i, y);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -860,7 +675,7 @@ public class GameEx {
             // y axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, x, i);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
             }
@@ -870,13 +685,13 @@ public class GameEx {
         case BLACKPAWN:
             for (int i = -1; i <= 1; i++) {
                 coords = convertToAlgebraic(x, y, x + i, y + 1);
-                if (isMoveLegal(coords, "black")) {
+                if (isMoveLegal(coords, "black", board)) {
                     legalMoves.add(coords);
                 }
                 // checks for 2 step move only when the pawn is at its initial y position.
                 if (y == 1) {
                     coords = convertToAlgebraic(x, y, x + i, y + 2);
-                    if (isMoveLegal(coords, "black")) {
+                    if (isMoveLegal(coords, "black", board)) {
                         legalMoves.add(coords);
                     }
                 }
@@ -885,13 +700,13 @@ public class GameEx {
         case WHITEPAWN:
             for (int i = -1; i <= 1; i++) {
                 coords = convertToAlgebraic(x, y, x + i, y - 1);
-                if (isMoveLegal(coords, "white")) {
+                if (isMoveLegal(coords, "white", board)) {
                     legalMoves.add(coords);
                 }
                 // checks for 2 step move only when the pawn is at its initial y position.
                 if (y == 6) {
                     coords = convertToAlgebraic(x, y, x + i, y - 2);
-                    if (isMoveLegal(coords, "white")) {
+                    if (isMoveLegal(coords, "white", board)) {
                         legalMoves.add(coords);
                     }
                 }
@@ -903,7 +718,7 @@ public class GameEx {
             for (int i = 0; i < arrayOfCoordinatesBlack.length; i++) {
                 for (int j = 0; j < arrayOfCoordinatesBlack.length; j++) {
                     coords = convertToAlgebraic(x, y, x + arrayOfCoordinatesBlack[i], y + arrayOfCoordinatesBlack[j]);
-                    if (isMoveLegal(coords, "black")) {
+                    if (isMoveLegal(coords, "black", board)) {
                         legalMoves.add(coords);
                     }
                 }
@@ -914,7 +729,7 @@ public class GameEx {
             for (int i = 0; i < arrayOfCoordinatesWhite.length; i++) {
                 for (int j = 0; j < arrayOfCoordinatesWhite.length; j++) {
                     coords = convertToAlgebraic(x, y, x + arrayOfCoordinatesWhite[i], y + arrayOfCoordinatesWhite[j]);
-                    if (isMoveLegal(coords, "white")) {
+                    if (isMoveLegal(coords, "white", board)) {
                         legalMoves.add(coords);
                     }
                 }
@@ -925,7 +740,7 @@ public class GameEx {
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
                     coords = convertToAlgebraic(x, y, x + i, y + j);
-                    if (isMoveLegal(coords, "black")) {
+                    if (isMoveLegal(coords, "black", board)) {
                         legalMoves.add(coords);
                     }
                 }
@@ -935,7 +750,7 @@ public class GameEx {
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
                     coords = convertToAlgebraic(x, y, x + i, y + j);
-                    if (isMoveLegal(coords, "white")) {
+                    if (isMoveLegal(coords, "white", board)) {
                         legalMoves.add(coords);
                     }
                 }
@@ -946,48 +761,112 @@ public class GameEx {
         return legalMoves;
     }
 
-    public void updateMoveSets() {
+    public void updateMoveSet(BoardEx board) {
         // generates legal moves for the current player
-        ArrayList<String> pseudoLegalMovesW = new ArrayList<String>();
-        ArrayList<String> pseudoLegalMovesB = new ArrayList<String>();
-
+        whitePlayer.moveSet.clear();
+        blackPlayer.moveSet.clear();
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
-                if (isWhite(gameBoard.getPiece(j, i))) {
+                if (isWhite(board.getPiece(j, i))) {
 
                     // debug code
-                    
-                    System.out.println(gameBoard.getPiece(j, i) + " piece " + generateLegalMoves(i, j).size());
+                    /*
+                     * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
+                     * j).size());
+                     * 
+                     * for (int k = 0; k < generateLegalMoves(i, j).size(); k++) {
+                     * System.out.println(generateLegalMoves(i, j).get(k)); }
+                     * 
+                     */
+                    whitePlayer.moveSet.addAll(generateLegalMoves(i, j, board));
 
-                    for (int k = 0; k < generateLegalMoves(i, j).size(); k++) {
-                        System.out.println(generateLegalMoves(i, j).get(k));
-                    }
-                    
-
-                    pseudoLegalMovesW.addAll(generateLegalMoves(i, j));
-
-                } else if (isBlack(gameBoard.getPiece(j, i))) {
+                } else if (isBlack(board.getPiece(j, i))) {
                     // debug code
-                    
-                    System.out.println(gameBoard.getPiece(j, i) + " piece " + generateLegalMoves(i, j).size());
+                    /*
+                     * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
+                     * j).size());
+                     * 
+                     * for (int k = 0; k < generateLegalMoves(i, j).size(); k++) {
+                     * System.out.println(generateLegalMoves(i, j).get(k)); }
+                     * 
+                     */
+                    blackPlayer.moveSet.addAll(generateLegalMoves(i, j, board));
 
-                    for (int k = 0; k < generateLegalMoves(i, j).size(); k++) {
-                        System.out.println(generateLegalMoves(i, j).get(k));
-                    }
-                    
-
-                    pseudoLegalMovesB.addAll(generateLegalMoves(i, j));
                 }
             }
-        } 
-
-        System.out.println(pseudoLegalMovesB.size() + " " + pseudoLegalMovesW.size());
-
-        blackPlayer.moveSet = pseudoLegalMovesB;
-        whitePlayer.moveSet = pseudoLegalMovesW;
+        }
     }
+    /*
+     * public void updateMoveSet(BoardEx board, ArrayList<String> moveSetBlack,
+     * ArrayList<String> moveSetWhite) { //overloaded function to make simulation of
+     * moves simpler // generates legal moves for the current player
+     * moveSetWhite.clear(); moveSetBlack.clear(); for (int i = 0; i < 8; i++) { for
+     * (int j = 0; j < 8; j++) { if (isWhite(board.getPiece(j, i))) {
+     * 
+     * // debug code
+     * 
+     * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
+     * j, board).size());
+     * 
+     * for (int k = 0; k < generateLegalMoves(i, j, board).size(); k++) {
+     * System.out.println(generateLegalMoves(i, j, board).get(k)); }
+     * 
+     * 
+     * moveSetWhite.addAll(generateLegalMoves(i, j, board));
+     * 
+     * } else if (isBlack(board.getPiece(j, i))) { // debug code
+     * 
+     * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
+     * j, board).size());
+     * 
+     * for (int k = 0; k < generateLegalMoves(i, j, board).size(); k++) {
+     * System.out.println(generateLegalMoves(i, j, board).get(k)); }
+     * 
+     * 
+     * moveSetBlack.addAll(generateLegalMoves(i, j, board)); } } } }
+     */
 
-    public void restrictPseudoLegalMoves() {
-        
+    public void restrictPseudoLegalMoves(PlayerEx currentPlayer, BoardEx board) {
+        ArrayList<String> result = new ArrayList<String>();
+        BoardEx simulatedBoard = new BoardEx();
+
+        for (int i = 0; i < currentPlayer.moveSet.size(); i++) {
+            simulatedBoard.setBoard(board.getBoard());
+            String move = currentPlayer.moveSet.get(i);
+
+            // buffers to protect original values of these variables from move simulation
+            ArrayList<String> legalMovesB = new ArrayList<String>(blackPlayer.moveSet);
+            ArrayList<String> legalMovesW = new ArrayList<String>(whitePlayer.moveSet);
+            int originalWhiteKingX = whitePlayer.kingX;
+            int originalWhiteKingY = whitePlayer.kingY;
+            int originalBlackKingX = blackPlayer.kingX;
+            int originalBlackKingY = blackPlayer.kingY;
+
+            movePiece(move, simulatedBoard);
+
+            updateMoveSet(simulatedBoard);
+            /*
+             * System.out.println(move + " : : "); for (int j = 0; j <
+             * blackPlayer.moveSet.size(); j++) {
+             * System.out.print(blackPlayer.moveSet.get(j) + ", "); } System.out.println();
+             */
+
+            if (!isInCheck(currentPlayer)) {
+                result.add(move);
+            }
+
+            // returning variables to pre simulation values
+            blackPlayer.moveSet.clear();
+            whitePlayer.moveSet.clear();
+            blackPlayer.moveSet.addAll(legalMovesB);
+            whitePlayer.moveSet.addAll(legalMovesW);
+            whitePlayer.kingX = originalWhiteKingX;
+            whitePlayer.kingY = originalWhiteKingY;
+            blackPlayer.kingX = originalBlackKingX;
+            blackPlayer.kingY = originalBlackKingY;
+
+        }
+
+        currentPlayer.moveSet = result;
     }
 }

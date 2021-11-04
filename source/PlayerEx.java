@@ -7,6 +7,9 @@ public class PlayerEx {
     boolean isInCheck;
     ArrayList<String> moveSet;
 
+    public PlayerEx () {
+        
+    }
     public PlayerEx (String player) {
         colour = player;
         isInCheck = false;

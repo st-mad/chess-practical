@@ -61,8 +61,6 @@ public class BoardEx {
         
         board[0][4] = BLACKKING;
         board[7][4] = WHITEKING;      
-        
-        board[3][4] = BLACKQUEEN;
     }
 
     // Prints the board. This method was provided with the starter code. Better not modify to ensure
@@ -107,5 +105,23 @@ public class BoardEx {
 
     public void setPiece(int row, int column, char piece) {
         board[row][column] = piece;
+    }
+
+    public char[][] getBoard() {
+        char[][] result = new char[8][8];
+        for (int i = 0; i < result.length; i++) {
+            for (int j = 0; j < result[i].length; j++) {
+                result[i][j] = board[i][j];
+            }
+        }
+        return result;
+    }
+
+    public void setBoard(char[][] gameBoard) {
+        for (int i = 0; i < board.length; i++) {
+            for (int j = 0; j < board[i].length; j++) {
+                board[i][j] = gameBoard[i][j];
+            }
+        }
     }
 }
