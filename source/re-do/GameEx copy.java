@@ -65,17 +65,83 @@ public class GameEx {
                 System.out.println(BLACKPLAYS_MSG);
             }
 
+            currentPlayer.moveSet.clear();
             updateMoveSets();
             // debug code
             System.out.println("total legal moves: " + whitePlayer.moveSet.size() + " : " + blackPlayer.moveSet.size());
+            
+                /*
+                 * for (int i = 0; i < totalLegalMovesWhite.size(); i++) {
+                 * System.out.println(totalLegalMovesWhite.get(i)); }
+                 */
+
+            /* else {
+                for (int i = 0; i < 8; i++) {
+                    for (int j = 0; j < 8; j++) {
+                        if (isBlack(gameBoard.getPiece(j, i))) {
+
+                            // debug code
+                            System.out.println(gameBoard.getPiece(j, i) + " piece " + generateLegalMoves(i, j).size());
+
+                            for (int k = 0; k < generateLegalMoves(i, j).size(); k++) {
+                                System.out.println(generateLegalMoves(i, j).get(k));
+                            }
+
+                            currentPlayer.moveSet.addAll(generateLegalMoves(i, j));
+                        }
+                    }
+                }
+
+                // debug code
+                System.out.println("total legal moves: " + currentPlayer.moveSet.size());
+                /*
+                 * for (int i = 0; i < totalLegalMovesBlack.size(); i++) {
+                 * System.out.println(totalLegalMovesBlack.get(i)); }
+                 *
+            }
+            */
 
             // check if current player is in check
             currentPlayer.isInCheck = isInCheck(currentPlayer);
-            System.out.println(currentPlayer.isInCheck + " : " + currentPlayer.kingX + "," + currentPlayer.kingY + " : "
-                    + currentPlayer.moveSet.size());
+            System.out.println(currentPlayer.isInCheck + " : " + currentPlayer.kingX + "," + currentPlayer.kingY + " : " + currentPlayer.moveSet.size());
 
-            //restrict moves in check
+            if (currentPlayer.isInCheck) {
+                // restrict moves in check
+                PlayerEx simulatePlayer = new PlayerEx(currentPlayer.colour);
+                simulatePlayer = currentPlayer;
+                System.out.println("simulation" + simulatePlayer.colour + " : " + simulatePlayer.moveSet.size());
 
+
+
+                int lengthAtStart = currentPlayer.moveSet.size();
+                for (int movesChecked = 0, movesLeft = 0; movesChecked < lengthAtStart; movesChecked++) {
+                    String move = currentPlayer.moveSet.get(movesLeft);
+                    if (isMoveLegal(move, currentPlayer.colour)) {
+                        int targetPositionX = (int) move.charAt(2) - 'a';
+                        int targetPositionY = 8 - ((int) move.charAt(3) - '0');
+
+                        char buffer = gameBoard.getPiece(targetPositionY, targetPositionX);
+
+                        movePiece(move);
+
+                        System.out.println(movesChecked + " " +  move + " " + isInCheck(currentPlayer));
+                        if (isInCheck(currentPlayer)) {
+                            currentPlayer.moveSet.remove(movesLeft);
+                        } else {
+                            movesLeft++;
+                            System.out.println("DANGERZONE");
+                        }
+                        String inverseMove = "" + move.charAt(2) + move.charAt(3) + move.charAt(0) + move.charAt(1);
+                        movePiece(inverseMove);
+                        gameBoard.setPiece(targetPositionY, targetPositionX, buffer);
+
+                    }
+                }
+                System.out.println("dick and balls: " + currentPlayer.moveSet.size());
+                /*for (int i = 0; i < currentPlayer.moveSet.size(); i++) {
+                    System.out.println(currentPlayer.moveSet.get(i));
+                }*/
+            }
 
             // takes user input
             String pos1 = reader.nextLine();
@@ -133,8 +199,7 @@ public class GameEx {
         reader.close();
     }
 
-    public String convertToAlgebraic(int initialPositionX, int initialPositionY, int targetPositionX,
-            int targetPositionY) {
+    public String convertToAlgebraic(int initialPositionX, int initialPositionY, int targetPositionX, int targetPositionY) {
         // this takes integer arguments and creates a result that fits the algebraic
         // notation of representing chess moves ex: a4b5.
 
@@ -589,10 +654,8 @@ public class GameEx {
                 String move = blackPlayer.moveSet.get(i);
                 int targetX = move.charAt(2) - 'a';
                 int targetY = 8 - (move.charAt(3) - '0');
-                // debug
-                // System.out.println("-> " + targetX + "," + targetY + "||" +
-                // currentPlayer.kingX + "," + currentPlayer.kingY + "||" + whitePlayer.kingX +
-                // "," + whitePlayer.kingY);
+                //debug
+                //System.out.println("-> " + targetX + "," + targetY + "||" + currentPlayer.kingX + "," + currentPlayer.kingY + "||" + whitePlayer.kingX + "," + whitePlayer.kingY);
                 if (targetX == whitePlayer.kingX && targetY == whitePlayer.kingY) {
                     result = true;
                 }
@@ -610,32 +673,9 @@ public class GameEx {
 
         switch (gameBoard.getPiece(y, x)) {
         case BLACKBISHOP:
-            xTarget = x;
-            yTarget = y;
-
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
-                    legalMoves.add(coords);
-                }
-                xTarget++;
-                yTarget++;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
-                    legalMoves.add(coords);
-                }
-                xTarget--;
-                yTarget--;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = -7 + x + y;
+            yTarget = 7;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "black")) {
                     legalMoves.add(coords);
@@ -644,45 +684,22 @@ public class GameEx {
                 yTarget--;
             }
 
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = 0;
+            yTarget = y - x;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "black")) {
                     legalMoves.add(coords);
                 }
-                xTarget--;
+                xTarget++;
                 yTarget++;
             }
             break;
 
         case WHITEBISHOP:
-            xTarget = x;
-            yTarget = y;
-
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
-                    legalMoves.add(coords);
-                }
-                xTarget++;
-                yTarget++;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
-                    legalMoves.add(coords);
-                }
-                xTarget--;
-                yTarget--;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = -7 + x + y;
+            yTarget = 7;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "white")) {
                     legalMoves.add(coords);
@@ -691,14 +708,14 @@ public class GameEx {
                 yTarget--;
             }
 
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = 0;
+            yTarget = y - x;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "white")) {
                     legalMoves.add(coords);
                 }
-                xTarget--;
+                xTarget++;
                 yTarget++;
             }
             break;
@@ -740,32 +757,9 @@ public class GameEx {
             break;
 
         case BLACKQUEEN:
-            xTarget = x;
-            yTarget = y;
-
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
-                    legalMoves.add(coords);
-                }
-                xTarget++;
-                yTarget++;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "black")) {
-                    legalMoves.add(coords);
-                }
-                xTarget--;
-                yTarget--;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = -7 + x + y;
+            yTarget = 7;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "black")) {
                     legalMoves.add(coords);
@@ -774,14 +768,15 @@ public class GameEx {
                 yTarget--;
             }
 
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = 0;
+            yTarget = y - x;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
+                System.out.println( x + y + " " + xTarget + " " + yTarget + " " + " pe " + coords);
                 if (isMoveLegal(coords, "black")) {
                     legalMoves.add(coords);
                 }
-                xTarget--;
+                xTarget++;
                 yTarget++;
             }
 
@@ -804,32 +799,9 @@ public class GameEx {
             break;
 
         case WHITEQUEEN:
-            xTarget = x;
-            yTarget = y;
-
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
-                    legalMoves.add(coords);
-                }
-                xTarget++;
-                yTarget++;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
-                coords = convertToAlgebraic(x, y, xTarget, yTarget);
-                if (isMoveLegal(coords, "white")) {
-                    legalMoves.add(coords);
-                }
-                xTarget--;
-                yTarget--;
-            }
-
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = -7 + x + y;
+            yTarget = 7;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "white")) {
                     legalMoves.add(coords);
@@ -838,14 +810,14 @@ public class GameEx {
                 yTarget--;
             }
 
-            xTarget = x;
-            yTarget = y;
-            while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
+            xTarget = 0;
+            yTarget = y - x;
+            while (xTarget != 8 && xTarget != -1 && yTarget != 8 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "white")) {
                     legalMoves.add(coords);
                 }
-                xTarget--;
+                xTarget++;
                 yTarget++;
             }
 
@@ -948,9 +920,7 @@ public class GameEx {
 
     public void updateMoveSets() {
         // generates legal moves for the current player
-        ArrayList<String> pseudoLegalMovesW = new ArrayList<String>();
-        ArrayList<String> pseudoLegalMovesB = new ArrayList<String>();
-
+        
         for (int i = 0; i < 8; i++) {
             for (int j = 0; j < 8; j++) {
                 if (isWhite(gameBoard.getPiece(j, i))) {
@@ -963,8 +933,7 @@ public class GameEx {
                         System.out.println(generateLegalMoves(i, j).get(k));
                     }
                     
-
-                    pseudoLegalMovesW.addAll(generateLegalMoves(i, j));
+                    whitePlayer.moveSet.addAll(generateLegalMoves(i, j));
 
                 } else if (isBlack(gameBoard.getPiece(j, i))) {
                     // debug code
@@ -975,19 +944,13 @@ public class GameEx {
                         System.out.println(generateLegalMoves(i, j).get(k));
                     }
                     
-
-                    pseudoLegalMovesB.addAll(generateLegalMoves(i, j));
+                    blackPlayer.moveSet.addAll(generateLegalMoves(i, j));
                 }
             }
-        } 
+        }
 
-        System.out.println(pseudoLegalMovesB.size() + " " + pseudoLegalMovesW.size());
 
-        blackPlayer.moveSet = pseudoLegalMovesB;
-        whitePlayer.moveSet = pseudoLegalMovesW;
-    }
-
-    public void restrictPseudoLegalMoves() {
         
+
     }
 }

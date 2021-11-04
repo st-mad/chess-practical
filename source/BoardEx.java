@@ -62,7 +62,7 @@ public class BoardEx {
         board[0][4] = BLACKKING;
         board[7][4] = WHITEKING;      
         
-        board[4][3] = WHITEQUEEN;
+        board[3][4] = BLACKQUEEN;
     }
 
     // Prints the board. This method was provided with the starter code. Better not modify to ensure
