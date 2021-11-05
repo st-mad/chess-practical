@@ -26,6 +26,9 @@ public class GameEx {
     private static String ILLEGALMOVE_MSG = "Illegal move!";
     private static String WHITEWINS_MSG = "White wins!";
     private static String BLACKWINS_MSG = "Black wins!";
+    private static String STALEMATE = "Stalemate!";
+    private static String CHECK = "Check!";
+    private static String CHECKMATE = "Checkmate!";
 
     private BoardEx gameBoard;
 
@@ -73,32 +76,39 @@ public class GameEx {
             // restrict moves in check
             restrictPseudoLegalMoves(currentPlayer, gameBoard);
 
-            // win condition.
+            // win condition. loser = 'n' if game is still in progress.
             String loser = checkGameOver(currentPlayer);
             switch (loser.charAt(0)) {
             case 'w':
-                gameBoard.printBoard();
+                System.out.println(CHECKMATE);
                 System.out.println(BLACKWINS_MSG);
                 done = true;
                 break;
             case 'b':
-                gameBoard.printBoard();
+                System.out.println(CHECKMATE);
                 System.out.println(WHITEWINS_MSG);
                 done = true;
                 break;
             case 's':
-                gameBoard.printBoard();
-                System.out.println("Stalemate");
+                System.out.println(STALEMATE);
                 done = true;
                 break;
 
             }
+            if (done) break;
 
             // takes user input
+
+            // current player plays message
             if (currentPlayer.colour.equals("white")) {
                 System.out.println(WHITEPLAYS_MSG);
             } else {
                 System.out.println(BLACKPLAYS_MSG);
+            }
+
+            // displays check message
+            if (currentPlayer.isInCheck) {
+                System.out.println(currentPlayer.colour + CHECK);
             }
 
             String pos1 = reader.nextLine();
@@ -112,6 +122,9 @@ public class GameEx {
             String coordinates = pos1 + pos2;
             coordinates = coordinates.toLowerCase();
 
+            // This iterates through the set of legal moves that a player has. This allows
+            // me to restrict moves based on check, instead of just validating moves as they
+            // are entered.
             for (int i = 0; i < currentPlayer.moveSet.size(); i++) {
                 if (coordinates.equals(currentPlayer.moveSet.get(i))) {
                     isMoveLegal = true;
@@ -142,6 +155,10 @@ public class GameEx {
     }
 
     public boolean isMoveLegal(String coordinates, String currentPlayer, BoardEx board) {
+        // this function could havee been reworked into the generateLegalMoves function,
+        // but as I used this to implement the basic version of this practical, I chose
+        // to keep this here.
+
         // components of move validity
         boolean isPathValid = false;
         boolean isRuleBound = false;
@@ -294,14 +311,14 @@ public class GameEx {
             isTargetValid = true;
         }
 
-        // debug code
-        // System.out.println(isPathValid + ": " + isRuleBound + ": " + isColourCorrect
-        // + ": " + isTargetValid);
         boolean isMoveValid = isPathValid && isRuleBound && isColourCorrect && isTargetValid;
         return isMoveValid;
     }
 
     public void movePiece(String coordinates, BoardEx board) {
+        // this function should maybe be moved to the board class, but the wording of
+        // the specification makes me think its meant to be here.
+
         // converts integer string into ints
         int initialPositionX = (int) coordinates.charAt(0) - 'a';
         int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
@@ -328,6 +345,12 @@ public class GameEx {
     }
 
     public String checkGameOver(PlayerEx currentPlayer) {
+        // checks if the given player is in check, and if the player has no legal moves
+        // left, they are checkmated.
+        // this doesn't include additional stalemate conditions like stalemates by
+        // repetition, etc.
+        // if the player runs out of legal moves, and the kind isn't in check, the game
+        // is a stalemate.
         if (currentPlayer.moveSet.size() == 0 && currentPlayer.isInCheck == true) {
             return currentPlayer.colour;
         } else if (currentPlayer.moveSet.size() == 0 && currentPlayer.isInCheck == false) {
@@ -346,11 +369,12 @@ public class GameEx {
         int incrementY = 0;
 
         // this makes the value either -1, 0, or 1
-        if (x1 != x2)
+        if (x1 != x2) {
             incrementX = (x2 - x1) / (Math.abs(x2 - x1));
-        if (y1 != y2)
+        }
+        if (y1 != y2) {
             incrementY = (y2 - y1) / (Math.abs(y2 - y1));
-
+        }
         // the algorithm starts one square in the direction of the target and checks if
         // the square is empty, before incrementing i,j with incrementx or increment y
         // respectively.
@@ -360,9 +384,6 @@ public class GameEx {
         int i = x1 + incrementX;
         int j = y1 + incrementY;
         while ((i != x2) || (j != y2)) {
-
-            // System.out.println(y2 + "," + j + " : " + x2 + "," + i + " : "+
-            // gameBoard.getPiece(j,i)); debug
             if (board.getPiece(j, i) != '.') {
                 return false;
             }
@@ -379,6 +400,7 @@ public class GameEx {
     }
 
     public boolean isWhite(char n) {
+        // This is a simple helper method that checks if the given piece is white.
         if (n <= 'Z' && n >= 'A') {
             return true;
         }
@@ -386,6 +408,7 @@ public class GameEx {
     }
 
     public boolean isBlack(char n) {
+        // This is a simple helper method that checks if the given piece is black.
         if (n <= 'z' && n >= 'a') {
             return true;
         }
@@ -393,6 +416,8 @@ public class GameEx {
     }
 
     public boolean isInCheck(PlayerEx currentPlayer) {
+        // this method iterates through the opposing players moveset, and checks if any
+        // of their moves can capture the king's current position
         boolean result = false;
 
         PlayerEx otherPlayer = new PlayerEx();
@@ -403,7 +428,7 @@ public class GameEx {
         }
 
         // iterates through other player's moveset and finds a move that can capture the
-        // king
+        // current player's king's position.
         for (int i = 0; i < otherPlayer.moveSet.size(); i++) {
             String move = otherPlayer.moveSet.get(i);
             int targetX = move.charAt(2) - 'a';
@@ -418,16 +443,25 @@ public class GameEx {
     }
 
     public ArrayList<String> generateLegalMoves(int x, int y, BoardEx board) {
+        // I know array lists aren't covered in the course, but trying to use normal
+        // arrays would've complicated it too much.
         ArrayList<String> legalMoves = new ArrayList<String>();
         int xTarget;
         int yTarget;
         String coords;
 
+        // If I was not afraid of breaking my entire code, then I would remove
+        // isMoveLegal here, and have this function handle move legality. But as I've
+        // already written that function for the basic spec, I choose to do it this way.
         switch (board.getPiece(y, x)) {
         case BLACKBISHOP:
+            // this code consists of basically 4 while loops that start from the position of
+            // the bishop and in the 4 diagonal directions, checking if the bishop can move
+            // there. I don't know if this is the correct term, but I visualise it as rays
+            // being cast outward.
+
             xTarget = x;
             yTarget = y;
-
             while (xTarget != 8 && yTarget != 8 && xTarget != -1 && yTarget != -1) {
                 coords = convertToAlgebraic(x, y, xTarget, yTarget);
                 if (isMoveLegal(coords, "black", board)) {
@@ -472,6 +506,8 @@ public class GameEx {
             break;
 
         case WHITEBISHOP:
+            // this code is identical to the one for the black bishop, except for the
+            // "white" in the arguement for isMoveLegal.
             xTarget = x;
             yTarget = y;
 
@@ -519,6 +555,8 @@ public class GameEx {
             break;
 
         case BLACKROOK:
+            // This just checks all the values in the along the x axis in the same y
+            // position as the ROOK, and then does the same for the y-axis.
             // x axis
             for (int i = 0; i < 8; i++) {
                 coords = convertToAlgebraic(x, y, i, y);
@@ -555,6 +593,7 @@ public class GameEx {
             break;
 
         case BLACKQUEEN:
+            // this is just a copy of the rook and bishop code.
             xTarget = x;
             yTarget = y;
 
@@ -683,6 +722,9 @@ public class GameEx {
             break;
 
         case BLACKPAWN:
+            // checks if the square infront of the pawn is legal. The definition of 'front'
+            // is different for black and white, and is the eexplanation for the differences
+            // in y - 1 and y + 1.
             for (int i = -1; i <= 1; i++) {
                 coords = convertToAlgebraic(x, y, x + i, y + 1);
                 if (isMoveLegal(coords, "black", board)) {
@@ -714,6 +756,11 @@ public class GameEx {
             break;
 
         case BLACKKNIGHT:
+            // The moveset for knights contains the points that are offsets of + or - 1 and
+            // 2 from the knight position. Like (1,2) , (2,1), (-2,1), etc.
+            // To simplify this behaviour, I chose to use an array and loop through it twice
+            // so that all the combinations of choosing and element are executed in each
+            // iteration.
             int[] arrayOfCoordinatesBlack = { -2, -1, 1, 2 };
             for (int i = 0; i < arrayOfCoordinatesBlack.length; i++) {
                 for (int j = 0; j < arrayOfCoordinatesBlack.length; j++) {
@@ -737,6 +784,8 @@ public class GameEx {
             break;
 
         case BLACKKING:
+            // this uses a similar algorithm as the knight but the array is just -1,0,1, so
+            // it can be done with only for loops and no array is required.
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
                     coords = convertToAlgebraic(x, y, x + i, y + j);
@@ -769,7 +818,7 @@ public class GameEx {
             for (int j = 0; j < 8; j++) {
                 if (isWhite(board.getPiece(j, i))) {
 
-                    // debug code
+                    // debug code: left in intentionally, as it was used to test the program
                     /*
                      * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
                      * j).size());
@@ -781,7 +830,7 @@ public class GameEx {
                     whitePlayer.moveSet.addAll(generateLegalMoves(i, j, board));
 
                 } else if (isBlack(board.getPiece(j, i))) {
-                    // debug code
+                    // debug code: left in intentionally, as it was used to test the program
                     /*
                      * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
                      * j).size());
@@ -796,41 +845,19 @@ public class GameEx {
             }
         }
     }
-    /*
-     * public void updateMoveSet(BoardEx board, ArrayList<String> moveSetBlack,
-     * ArrayList<String> moveSetWhite) { //overloaded function to make simulation of
-     * moves simpler // generates legal moves for the current player
-     * moveSetWhite.clear(); moveSetBlack.clear(); for (int i = 0; i < 8; i++) { for
-     * (int j = 0; j < 8; j++) { if (isWhite(board.getPiece(j, i))) {
-     * 
-     * // debug code
-     * 
-     * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
-     * j, board).size());
-     * 
-     * for (int k = 0; k < generateLegalMoves(i, j, board).size(); k++) {
-     * System.out.println(generateLegalMoves(i, j, board).get(k)); }
-     * 
-     * 
-     * moveSetWhite.addAll(generateLegalMoves(i, j, board));
-     * 
-     * } else if (isBlack(board.getPiece(j, i))) { // debug code
-     * 
-     * System.out.println(board.getPiece(j, i) + " piece " + generateLegalMoves(i,
-     * j, board).size());
-     * 
-     * for (int k = 0; k < generateLegalMoves(i, j, board).size(); k++) {
-     * System.out.println(generateLegalMoves(i, j, board).get(k)); }
-     * 
-     * 
-     * moveSetBlack.addAll(generateLegalMoves(i, j, board)); } } } }
-     */
 
     public void restrictPseudoLegalMoves(PlayerEx currentPlayer, BoardEx board) {
+        // this function is also something I would rework.
+
         ArrayList<String> result = new ArrayList<String>();
         BoardEx simulatedBoard = new BoardEx();
 
         for (int i = 0; i < currentPlayer.moveSet.size(); i++) {
+            // the act of simulating a move can resonably be put in a separate method in an
+            // AI class, but as I have not yet implemented and AI, it is left here.
+
+            // creates an independent copy of the gameboard, that can be used to simulate
+            // moves.
             simulatedBoard.setBoard(board.getBoard());
             String move = currentPlayer.moveSet.get(i);
 
@@ -842,24 +869,28 @@ public class GameEx {
             int originalBlackKingX = blackPlayer.kingX;
             int originalBlackKingY = blackPlayer.kingY;
 
+            // moves the piece on simulated board
             movePiece(move, simulatedBoard);
 
+            // updates the move sets available to each player.
             updateMoveSet(simulatedBoard);
-            /*
-             * System.out.println(move + " : : "); for (int j = 0; j <
-             * blackPlayer.moveSet.size(); j++) {
-             * System.out.print(blackPlayer.moveSet.get(j) + ", "); } System.out.println();
-             */
 
+            // checks if the move leaves the player in check. if it does, that move is
+            // illegal, as a player cannot move into check, or mmake a move such that they
+            // are automatically in check for the next turn.
             if (!isInCheck(currentPlayer)) {
                 result.add(move);
             }
 
             // returning variables to pre simulation values
+
+            // returns the players pre-simulation moveset
             blackPlayer.moveSet.clear();
             whitePlayer.moveSet.clear();
             blackPlayer.moveSet.addAll(legalMovesB);
             whitePlayer.moveSet.addAll(legalMovesW);
+
+            // returns the players king's to their original position
             whitePlayer.kingX = originalWhiteKingX;
             whitePlayer.kingY = originalWhiteKingY;
             blackPlayer.kingX = originalBlackKingX;

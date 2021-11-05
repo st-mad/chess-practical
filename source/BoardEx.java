@@ -35,7 +35,7 @@ public class BoardEx {
             }
         }
         
-        //STARTING SETUP
+        //STARTING SETUP modified to be the full chess game (sms31)
         for (int i = 0; i < 8; i++) {
             board[1][i] = BLACKPAWN;
             board[6][i] = WHITEPAWN;
@@ -98,6 +98,8 @@ public class BoardEx {
             System.out.print(" " + (char)(col + 'a'));
         System.out.print("\n\n");
     }
+
+    //getters and setters
 
     public char getPiece(int row, int column) {
         return board[row][column];
