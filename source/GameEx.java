@@ -27,7 +27,7 @@ public class GameEx {
     private static String WHITEWINS_MSG = "White wins!";
     private static String BLACKWINS_MSG = "Black wins!";
     private static String STALEMATE = "Stalemate!";
-    private static String CHECK = "Check!";
+    private static String CHECK = " is in check!";
     private static String CHECKMATE = "Checkmate!";
 
     private BoardEx gameBoard;
@@ -53,6 +53,9 @@ public class GameEx {
         int turnCount = 1;
         PlayerEx currentPlayer;
         boolean done = false;
+
+        String game = new String();
+        game = "Start";
 
         while (!done) {
 
@@ -95,7 +98,10 @@ public class GameEx {
                 break;
 
             }
-            if (done) break;
+            if (done) {
+                System.out.println(game);
+                break;
+            }
 
             // takes user input
 
@@ -133,7 +139,8 @@ public class GameEx {
 
             // executes the move
             if (isMoveLegal) {
-                movePiece(coordinates, gameBoard);
+                gameBoard.movePiece(coordinates, blackPlayer, whitePlayer);
+                game = game + ", " + coordinates;
                 turnCount++;
             } else {
                 System.out.println(ILLEGALMOVE_MSG);
@@ -209,7 +216,7 @@ public class GameEx {
             isColourCorrect = currentPlayer.equals("white");
             break;
         case BLACKPAWN:
-            isPathValid = true; // bypasses the pathchecking
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board); // bypasses the pathchecking
 
             // diagonal capture if the target is white while the main piece is black.
             if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY + 1) {
@@ -228,7 +235,7 @@ public class GameEx {
             isColourCorrect = currentPlayer.equals("black");
             break;
         case WHITEPAWN:
-            isPathValid = true;// bypasses the pathchecking
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);// bypasses the pathchecking
 
             // diagonal capture if the target is white while the main piece is black.
             if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY - 1) {
@@ -315,34 +322,7 @@ public class GameEx {
         return isMoveValid;
     }
 
-    public void movePiece(String coordinates, BoardEx board) {
-        // this function should maybe be moved to the board class, but the wording of
-        // the specification makes me think its meant to be here.
-
-        // converts integer string into ints
-        int initialPositionX = (int) coordinates.charAt(0) - 'a';
-        int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
-        int targetPositionX = (int) coordinates.charAt(2) - 'a';
-        int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
-
-        // tracks position of the king in a field.
-        if (board.getPiece(initialPositionY, initialPositionX) == 'k') {
-            blackPlayer.kingX = targetPositionX;
-            blackPlayer.kingY = targetPositionY;
-        }
-
-        // tracks position of the king in a field.
-        if (board.getPiece(initialPositionY, initialPositionX) == 'K') {
-            whitePlayer.kingX = targetPositionX;
-            whitePlayer.kingY = targetPositionY;
-        }
-
-        // actual swap
-        char buffer = board.getPiece(initialPositionY, initialPositionX);
-        board.setPiece(targetPositionY, targetPositionX, buffer);
-        board.setPiece(initialPositionY, initialPositionX, FREE);
-
-    }
+   
 
     public String checkGameOver(PlayerEx currentPlayer) {
         // checks if the given player is in check, and if the player has no legal moves
@@ -870,7 +850,7 @@ public class GameEx {
             int originalBlackKingY = blackPlayer.kingY;
 
             // moves the piece on simulated board
-            movePiece(move, simulatedBoard);
+            simulatedBoard.movePiece(move, blackPlayer, whitePlayer);
 
             // updates the move sets available to each player.
             updateMoveSet(simulatedBoard);

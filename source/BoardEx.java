@@ -126,4 +126,33 @@ public class BoardEx {
             }
         }
     }
+
+    public void movePiece(String coordinates, PlayerEx blackPlayer, PlayerEx whitePlayer) {
+        // this function should maybe be moved to the board class, but the wording of
+        // the specification makes me think its meant to be here.
+
+        // converts integer string into ints
+        int initialPositionX = (int) coordinates.charAt(0) - 'a';
+        int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
+        int targetPositionX = (int) coordinates.charAt(2) - 'a';
+        int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
+
+        // tracks position of the king in a field.
+        if (board[initialPositionY][initialPositionX]  == 'k') {
+            blackPlayer.kingX = targetPositionX;
+            blackPlayer.kingY = targetPositionY;
+        }
+
+        // tracks position of the king in a field.
+        if (board[initialPositionY][initialPositionX] == 'K') {
+            whitePlayer.kingX = targetPositionX;
+            whitePlayer.kingY = targetPositionY;
+        }
+
+        // actual swap
+        char buffer = board[initialPositionY][initialPositionX];
+        board[targetPositionY][targetPositionX] = buffer; 
+        board[initialPositionY][initialPositionX] = FREE;
+
+    }
 }

@@ -6,7 +6,7 @@
         {
             "label": "bitch",
             "type": "shell",
-            "command": "javac *.java && java W08PracticalEx",
+            "command": "cd source && javac *.java && java W08PracticalEx",
             "problemMatcher": [],
             "group": {
                 "kind": "build",
