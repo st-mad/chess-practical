@@ -40,7 +40,7 @@ public class BoardEx {
             board[1][i] = BLACKPAWN;
             board[6][i] = WHITEPAWN;
         }
-
+        
         board[0][0] = BLACKROOK;
         board[0][7] = BLACKROOK;
         board[7][0] = WHITEROOK;
@@ -141,18 +141,55 @@ public class BoardEx {
         if (board[initialPositionY][initialPositionX]  == 'k') {
             blackPlayer.kingX = targetPositionX;
             blackPlayer.kingY = targetPositionY;
+            blackPlayer.hasMovedKing = true;
         }
 
         // tracks position of the king in a field.
         if (board[initialPositionY][initialPositionX] == 'K') {
             whitePlayer.kingX = targetPositionX;
             whitePlayer.kingY = targetPositionY;
+            whitePlayer.hasMovedKing = true;
         }
 
-        // actual swap
-        char buffer = board[initialPositionY][initialPositionX];
-        board[targetPositionY][targetPositionX] = buffer; 
-        board[initialPositionY][initialPositionX] = FREE;
+        //castling
+        
+        if (board[initialPositionY][initialPositionX] == 'K') {
+            if (coordinates.equals("e1g1")) {
+                char buffer = board[initialPositionY][initialPositionX];
+                board[targetPositionY][targetPositionX] = buffer; 
+                board[initialPositionY][initialPositionX] = FREE;
+
+                movePiece("h1f1",blackPlayer,whitePlayer);
+
+            } else if (coordinates.equals("e1c1")){
+                char buffer = board[initialPositionY][initialPositionX];
+                board[targetPositionY][targetPositionX] = buffer; 
+                board[initialPositionY][initialPositionX] = FREE;
+
+                movePiece("a1d1",blackPlayer,whitePlayer);
+            }
+        } else if (board[initialPositionY][initialPositionX] == 'k') {
+            if (coordinates.equals("e8g8")) {
+                char buffer = board[initialPositionY][initialPositionX];
+                board[targetPositionY][targetPositionX] = buffer; 
+                board[initialPositionY][initialPositionX] = FREE;
+
+                movePiece("h8f8",blackPlayer,whitePlayer);
+
+            } else if (coordinates.equals("e8c8")){
+                char buffer = board[initialPositionY][initialPositionX];
+                board[targetPositionY][targetPositionX] = buffer; 
+                board[initialPositionY][initialPositionX] = FREE;
+                
+                movePiece("a8d8",blackPlayer,whitePlayer);
+            }
+        } else {
+            // actual swap
+            char buffer = board[initialPositionY][initialPositionX];
+            board[targetPositionY][targetPositionX] = buffer; 
+            board[initialPositionY][initialPositionX] = FREE;
+        }
+       
 
     }
 }

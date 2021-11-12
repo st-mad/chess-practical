@@ -162,6 +162,53 @@ public class GameEx {
     }
 
     public boolean isMoveLegal(String coordinates, String currentPlayer, BoardEx board) {
+        boolean result = false;
+
+        boolean isPathValid = false;
+        boolean isColourCorrect = false;
+        boolean isTargetValid = false;
+        boolean isOutofBounds = false;
+
+        // converts algebraic notation into 0-7 inclusive x,y coordinates
+        int initialPositionX = (int) coordinates.charAt(0) - 'a';
+        int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
+        int targetPositionX = (int) coordinates.charAt(2) - 'a';
+        int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
+
+        isOutofBounds = (targetPositionX < 0 || targetPositionX >= 8) | (initialPositionX < 0 || initialPositionX >= 8)
+                | (targetPositionY < 0 || targetPositionY >= 8) | (initialPositionY < 0 || initialPositionY >= 8);
+
+        if (isOutofBounds) {
+            return false;
+        }
+
+        if ('n' == board.getPiece(initialPositionY, initialPositionX) || 'N' == board.getPiece(initialPositionY, initialPositionX)) {
+            isPathValid = true;
+        } else {
+            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
+        }
+        
+        if (currentPlayer.equals("white")) {
+            isColourCorrect = currentPlayer.equals("white");
+        } else {
+            isColourCorrect = currentPlayer.equals("black");
+        }
+
+        // captures
+        if (currentPlayer.equals("black") && isWhite(board.getPiece(targetPositionY, targetPositionX))) {
+            isTargetValid = true;
+        } else if (currentPlayer.equals("white") && isBlack(board.getPiece(targetPositionY, targetPositionX))) {
+            isTargetValid = true;
+        } else if (board.getPiece(targetPositionY, targetPositionX) == '.') {
+            isTargetValid = true;
+        }
+
+        result = isPathValid && isColourCorrect && isTargetValid;
+        return result;
+    }
+
+
+    public boolean isMoveLegalR(String coordinates, String currentPlayer, BoardEx board) {
         // this function could havee been reworked into the generateLegalMoves function,
         // but as I used this to implement the basic version of this practical, I chose
         // to keep this here.
@@ -774,7 +821,20 @@ public class GameEx {
                     }
                 }
             }
+
+            //castling
+            if (blackPlayer.hasMovedKing == false) {
+                if(board.getPiece(blackPlayer.kingY, blackPlayer.kingX - 1) == '.' && board.getPiece(blackPlayer.kingY, blackPlayer.kingX - 2) == '.' && board.getPiece(blackPlayer.kingY, blackPlayer.kingX - 3) == '.' && board.getPiece(blackPlayer.kingY, blackPlayer.kingX - 4) == BLACKROOK) {
+                    coords = convertToAlgebraic(x, y, x - 2, y);
+                    legalMoves.add(coords);
+                }
+                if(board.getPiece(blackPlayer.kingY, blackPlayer.kingX + 1) == '.' && board.getPiece(blackPlayer.kingY, blackPlayer.kingX + 2) == '.' && board.getPiece(blackPlayer.kingY, blackPlayer.kingX + 3) == BLACKROOK) {
+                    coords = convertToAlgebraic(x, y, x + 2, y);
+                    legalMoves.add(coords);
+                }
+            }
             break;
+
         case WHITEKING:
             for (int i = -1; i <= 1; i++) {
                 for (int j = -1; j <= 1; j++) {
@@ -782,6 +842,18 @@ public class GameEx {
                     if (isMoveLegal(coords, "white", board)) {
                         legalMoves.add(coords);
                     }
+                }
+            }
+
+            //castling
+            if (whitePlayer.hasMovedKing == false) {
+                if(board.getPiece(whitePlayer.kingY, whitePlayer.kingX - 1) == '.' && board.getPiece(whitePlayer.kingY, whitePlayer.kingX - 2) == '.' && board.getPiece(whitePlayer.kingY, whitePlayer.kingX - 3) == '.' && board.getPiece(whitePlayer.kingY, whitePlayer.kingX - 4) == WHITEROOK) {
+                    coords = convertToAlgebraic(x, y, x - 2, y);
+                    legalMoves.add(coords);
+                }
+                if(board.getPiece(whitePlayer.kingY, whitePlayer.kingX + 1) == '.' && board.getPiece(whitePlayer.kingY, whitePlayer.kingX + 2) == '.' && board.getPiece(whitePlayer.kingY, whitePlayer.kingX + 3) == WHITEROOK) {
+                    coords = convertToAlgebraic(x, y, x + 2, y);
+                    legalMoves.add(coords);
                 }
             }
             break;

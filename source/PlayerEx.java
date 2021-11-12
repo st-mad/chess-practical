@@ -4,6 +4,7 @@ public class PlayerEx {
     String colour;
     int kingX;
     int kingY;
+    boolean hasMovedKing;
     boolean isInCheck;
     ArrayList<String> moveSet;
 
@@ -12,6 +13,7 @@ public class PlayerEx {
     }
     public PlayerEx (String player) {
         colour = player;
+        hasMovedKing = false;
         isInCheck = false;
         if (colour == "black") {
             kingX = 4;
