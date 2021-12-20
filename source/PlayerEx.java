@@ -6,6 +6,8 @@ public class PlayerEx {
     int kingY;
     boolean hasMovedKing;
     boolean isInCheck;
+    boolean canBeEnPassanted;
+    String enPassantVulnerablePawn;
     ArrayList<String> moveSet;
 
     public PlayerEx () {
@@ -14,6 +16,7 @@ public class PlayerEx {
     public PlayerEx (String player) {
         colour = player;
         hasMovedKing = false;
+        canBeEnPassanted = false;
         isInCheck = false;
         if (colour == "black") {
             kingX = 4;

@@ -1,5 +1,6 @@
 import java.util.Scanner;
 import java.util.ArrayList;
+import java.util.Random;
 
 public class GameEx {
     // The following five constants were defined in the starter code (kt54)
@@ -46,6 +47,7 @@ public class GameEx {
     public void play() {
 
         Scanner reader = new Scanner(System.in);
+        Random rand = new Random();
 
         gameBoard = new BoardEx();
 
@@ -62,7 +64,7 @@ public class GameEx {
             boolean isMoveLegal = false;
             // prints the board
             gameBoard.printBoard();
-
+            
             // determines whose turn it is
             if (turnCount % 2 == 1) {
                 currentPlayer = whitePlayer;
@@ -78,6 +80,26 @@ public class GameEx {
 
             // restrict moves in check
             restrictPseudoLegalMoves(currentPlayer, gameBoard);
+
+            //debugcode
+            System.out.println(blackPlayer.isInCheck + " : " + whitePlayer.isInCheck);
+
+            for (int i = 0; i < currentPlayer.moveSet.size(); i++) {
+                System.out.print(currentPlayer.moveSet.get(i) + ", ");
+            }
+            System.out.println();
+
+            boolean temp1 = false;
+            for (int i = 0; i < 8; i++) {
+                for (int j = 0; j < 8; j++) {
+                    if (gameBoard.getPiece(j,i) != 'K' && gameBoard.getPiece(j,i) != 'k' && gameBoard.getPiece(j,i) != FREE) {
+                        temp1 = true;
+                    }
+                }
+            }
+            if ((temp1 == false)) {
+                reader.nextInt();
+            }
 
             // win condition. loser = 'n' if game is still in progress.
             String loser = checkGameOver(currentPlayer);
@@ -103,7 +125,6 @@ public class GameEx {
                 break;
             }
 
-            // takes user input
 
             // current player plays message
             if (currentPlayer.colour.equals("white")) {
@@ -115,26 +136,39 @@ public class GameEx {
             // displays check message
             if (currentPlayer.isInCheck) {
                 System.out.println(currentPlayer.colour + CHECK);
+                reader.nextInt();
             }
 
-            String pos1 = reader.nextLine();
-            if (pos1.equals("quit")) {
-                done = true;
-                break;
-            }
-            String pos2 = reader.nextLine();
+            String coordinates;
+            //hardcoding randomised AI
+            int movesetSize = currentPlayer.moveSet.size();
+            int index = rand.nextInt(movesetSize);
+            coordinates = currentPlayer.moveSet.get(index);
 
+            System.out.println(coordinates);
+            /*
             // makes the user input independent of capitalisations
-            String coordinates = pos1 + pos2;
+            coordinates = reader.nextLine();
             coordinates = coordinates.toLowerCase();
-
+            */
             // This iterates through the set of legal moves that a player has. This allows
             // me to restrict moves based on check, instead of just validating moves as they
             // are entered.
             for (int i = 0; i < currentPlayer.moveSet.size(); i++) {
-                if (coordinates.equals(currentPlayer.moveSet.get(i))) {
-                    isMoveLegal = true;
+                String move = currentPlayer.moveSet.get(i);
+                if (move.length() == 5) {
+                    move = currentPlayer.moveSet.get(i).substring(0,4);
+                    if (coordinates.equals(move)) {
+                        coordinates = coordinates + 'e';
+                        isMoveLegal = true;
+                    }
+
+                } else {
+                    if (coordinates.equals(move)) {
+                        isMoveLegal = true;
+                    }
                 }
+                
             }
 
             // executes the move
@@ -175,6 +209,7 @@ public class GameEx {
         int targetPositionX = (int) coordinates.charAt(2) - 'a';
         int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
 
+        //out of bounds check
         isOutofBounds = (targetPositionX < 0 || targetPositionX >= 8) | (initialPositionX < 0 || initialPositionX >= 8)
                 | (targetPositionY < 0 || targetPositionY >= 8) | (initialPositionY < 0 || initialPositionY >= 8);
 
@@ -182,12 +217,14 @@ public class GameEx {
             return false;
         }
 
+        //path check (knight exemption)
         if ('n' == board.getPiece(initialPositionY, initialPositionX) || 'N' == board.getPiece(initialPositionY, initialPositionX)) {
             isPathValid = true;
         } else {
             isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
         }
         
+        //colour
         if (currentPlayer.equals("white")) {
             isColourCorrect = currentPlayer.equals("white");
         } else {
@@ -203,173 +240,27 @@ public class GameEx {
             isTargetValid = true;
         }
 
+        //overwrite target flag for pawns:
+        if (board.getPiece(initialPositionY, initialPositionX) == 'p' || board.getPiece(initialPositionY, initialPositionX) == 'P') {
+            isTargetValid = false;
+            if (currentPlayer.equals("black") && isWhite(board.getPiece(targetPositionY, targetPositionX))) {
+                if (initialPositionX != targetPositionX) {
+                    isTargetValid = true;
+                }
+            } else if (currentPlayer.equals("white") && isBlack(board.getPiece(targetPositionY, targetPositionX))) {
+                if (initialPositionX != targetPositionX) {
+                    isTargetValid = true;
+                }
+            } else if (board.getPiece(targetPositionY, targetPositionX) == '.') {
+                if (initialPositionX == targetPositionX) {
+                    isTargetValid = true;
+                }
+            }
+        }
+
         result = isPathValid && isColourCorrect && isTargetValid;
         return result;
     }
-
-
-    public boolean isMoveLegalR(String coordinates, String currentPlayer, BoardEx board) {
-        // this function could havee been reworked into the generateLegalMoves function,
-        // but as I used this to implement the basic version of this practical, I chose
-        // to keep this here.
-
-        // components of move validity
-        boolean isPathValid = false;
-        boolean isRuleBound = false;
-        boolean isColourCorrect = false;
-        boolean isTargetValid = false;
-        boolean isOutofBounds = false;
-
-        // converts algebraic notation into 0-7 inclusive x,y coordinates
-        int initialPositionX = (int) coordinates.charAt(0) - 'a';
-        int initialPositionY = 8 - ((int) coordinates.charAt(1) - '0');
-        int targetPositionX = (int) coordinates.charAt(2) - 'a';
-        int targetPositionY = 8 - ((int) coordinates.charAt(3) - '0');
-
-        // checks if the move is out of bounds
-        isOutofBounds = (targetPositionX < 0 || targetPositionX >= 8) | (initialPositionX < 0 || initialPositionX >= 8)
-                | (targetPositionY < 0 || targetPositionY >= 8) | (initialPositionY < 0 || initialPositionY >= 8);
-
-        if (isOutofBounds) {
-            return false;
-        }
-
-        // checks if the move is rule bound to the pieces moveset
-        switch (board.getPiece(initialPositionY, initialPositionX)) {
-        case BLACKBISHOP:
-            // checks paths
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
-            isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math
-                    .abs(targetPositionX - initialPositionX));
-            isColourCorrect = currentPlayer.equals("black");
-            break;
-        case WHITEBISHOP:
-            // checks path
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
-            isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math
-                    .abs(targetPositionX - initialPositionX));
-            isColourCorrect = currentPlayer.equals("white");
-            break;
-        case BLACKROOK:
-            // checks path
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
-            isRuleBound = (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
-            isColourCorrect = currentPlayer.equals("black");
-            break;
-        case WHITEROOK:
-            // checks paths
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
-            isRuleBound = (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
-            isColourCorrect = currentPlayer.equals("white");
-            break;
-        case BLACKPAWN:
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board); // bypasses the pathchecking
-
-            // diagonal capture if the target is white while the main piece is black.
-            if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY + 1) {
-                isRuleBound = isWhite(board.getPiece(targetPositionY, targetPositionX));
-            }
-            // if the target is empty, only allow the pawn to move 1 square down (because
-            // its black).
-            else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY + 1) {
-                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.');
-            }
-            // if the initialPositionY is the initial position of the pawn, then it also
-            // allows you to move down 2 squares
-            else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY + 2) {
-                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.') && initialPositionY == 1;
-            }
-            isColourCorrect = currentPlayer.equals("black");
-            break;
-        case WHITEPAWN:
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);// bypasses the pathchecking
-
-            // diagonal capture if the target is white while the main piece is black.
-            if (Math.abs(targetPositionX - initialPositionX) == 1 && targetPositionY == initialPositionY - 1) {
-                isRuleBound = isBlack(board.getPiece(targetPositionY, targetPositionX));
-            }
-            // if the target is empty, only allow the pawn to move 1 square up (because its
-            // white).
-            else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY - 1) {
-                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.');
-            }
-            // if the initialPositionY is the initial position of the pawn, then it also
-            // allows you to move up 2 squares
-            else if (targetPositionX == initialPositionX && targetPositionY == initialPositionY - 2) {
-                isRuleBound = (board.getPiece(targetPositionY, targetPositionX) == '.') && initialPositionY == 6;
-            }
-            isColourCorrect = currentPlayer.equals("white");
-            break;
-        case BLACKKNIGHT:
-            // checks path
-            isPathValid = true;
-
-            // rule set for knights
-            isRuleBound = (Math.abs(targetPositionX - initialPositionX) == 1
-                    && Math.abs(targetPositionY - initialPositionY) == 2)
-                    || (Math.abs(targetPositionX - initialPositionX) == 2
-                            && Math.abs(targetPositionY - initialPositionY) == 1);
-            isColourCorrect = currentPlayer.equals("black");
-            break;
-        case WHITEKNIGHT:
-            // checks paths
-            isPathValid = true;
-
-            // rule set for knights
-            isRuleBound = (Math.abs(targetPositionX - initialPositionX) == 1
-                    && Math.abs(targetPositionY - initialPositionY) == 2)
-                    || (Math.abs(targetPositionX - initialPositionX) == 2
-                            && Math.abs(targetPositionY - initialPositionY) == 1);
-            isColourCorrect = currentPlayer.equals("white");
-            break;
-        case BLACKQUEEN:
-            // checks paths
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
-
-            // combines the rules for bishop and rook
-            isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math.abs(targetPositionX - initialPositionX))
-                    || (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
-            isColourCorrect = currentPlayer.equals("black");
-            break;
-        case WHITEQUEEN:
-            // checks path
-            isPathValid = checkPath(initialPositionX, initialPositionY, targetPositionX, targetPositionY, board);
-
-            // combines the rules for bishop and rook
-            isRuleBound = (Math.abs(targetPositionY - initialPositionY) == Math.abs(targetPositionX - initialPositionX))
-                    || (targetPositionX == initialPositionX || targetPositionY == initialPositionY);
-            isColourCorrect = currentPlayer.equals("white");
-            break;
-        case BLACKKING:
-            // checks paths
-            isPathValid = true;
-            isRuleBound = (Math.abs(targetPositionX - initialPositionX) == 1
-                    || Math.abs(targetPositionY - initialPositionY) == 1);
-            isColourCorrect = currentPlayer.equals("black");
-            break;
-        case WHITEKING:
-            // checks path
-            isPathValid = true;
-            isRuleBound = (Math.abs(targetPositionX - initialPositionX) == 1
-                    || Math.abs(targetPositionY - initialPositionY) == 1);
-            isColourCorrect = currentPlayer.equals("white");
-            break;
-        }
-
-        // captures
-        if (currentPlayer.equals("black") && isWhite(board.getPiece(targetPositionY, targetPositionX))) {
-            isTargetValid = true;
-        } else if (currentPlayer.equals("white") && isBlack(board.getPiece(targetPositionY, targetPositionX))) {
-            isTargetValid = true;
-        } else if (board.getPiece(targetPositionY, targetPositionX) == '.') {
-            isTargetValid = true;
-        }
-
-        boolean isMoveValid = isPathValid && isRuleBound && isColourCorrect && isTargetValid;
-        return isMoveValid;
-    }
-
-   
 
     public String checkGameOver(PlayerEx currentPlayer) {
         // checks if the given player is in check, and if the player has no legal moves
@@ -759,10 +650,26 @@ public class GameEx {
                 }
                 // checks for 2 step move only when the pawn is at its initial y position.
                 if (y == 1) {
-                    coords = convertToAlgebraic(x, y, x + i, y + 2);
+                    coords = convertToAlgebraic(x, y, x, y + 2);
                     if (isMoveLegal(coords, "black", board)) {
                         legalMoves.add(coords);
                     }
+                }
+            }
+            
+            if (whitePlayer.canBeEnPassanted) {
+                int enemyPawnX = (int) whitePlayer.enPassantVulnerablePawn.charAt(0) - 'a';
+                int enemyPawnY = 8 - ((int) whitePlayer.enPassantVulnerablePawn.charAt(1) - '0');
+
+                if (enemyPawnY == y && enemyPawnX == x + 1) {
+                    coords = convertToAlgebraic(x,y,x + 1, y + 1);
+                    coords = coords + "e";
+                    legalMoves.add(coords);
+                }
+                if (enemyPawnY == y && enemyPawnX == x - 1) {
+                    coords = convertToAlgebraic(x,y,x - 1, y + 1);
+                    coords = coords + "e";
+                    legalMoves.add(coords);
                 }
             }
             break;
@@ -774,12 +681,31 @@ public class GameEx {
                 }
                 // checks for 2 step move only when the pawn is at its initial y position.
                 if (y == 6) {
-                    coords = convertToAlgebraic(x, y, x + i, y - 2);
+                    coords = convertToAlgebraic(x, y, x, y - 2);
                     if (isMoveLegal(coords, "white", board)) {
                         legalMoves.add(coords);
                     }
                 }
             }
+
+            if (blackPlayer.canBeEnPassanted) {
+                int enemyPawnX = (int) blackPlayer.enPassantVulnerablePawn.charAt(0) - 'a';
+                int enemyPawnY = 8 - ((int) blackPlayer.enPassantVulnerablePawn.charAt(1) - '0');
+
+                if (enemyPawnY == y && enemyPawnX == x + 1) {
+                    coords = convertToAlgebraic(x,y,x + 1, y - 1);
+                    coords = coords + "e";
+                    legalMoves.add(coords);
+                }
+
+                if (enemyPawnY == y && enemyPawnX == x - 1) {
+                    coords = convertToAlgebraic(x,y,x - 1, y - 1);
+                    coords = coords + "e";
+                    legalMoves.add(coords);
+                }
+            }
+
+            
             break;
 
         case BLACKKNIGHT:
@@ -792,7 +718,7 @@ public class GameEx {
             for (int i = 0; i < arrayOfCoordinatesBlack.length; i++) {
                 for (int j = 0; j < arrayOfCoordinatesBlack.length; j++) {
                     coords = convertToAlgebraic(x, y, x + arrayOfCoordinatesBlack[i], y + arrayOfCoordinatesBlack[j]);
-                    if (isMoveLegal(coords, "black", board)) {
+                    if (isMoveLegal(coords, "black", board) && Math.abs(arrayOfCoordinatesBlack[i]) != Math.abs(arrayOfCoordinatesBlack[j])) {
                         legalMoves.add(coords);
                     }
                 }
@@ -803,7 +729,7 @@ public class GameEx {
             for (int i = 0; i < arrayOfCoordinatesWhite.length; i++) {
                 for (int j = 0; j < arrayOfCoordinatesWhite.length; j++) {
                     coords = convertToAlgebraic(x, y, x + arrayOfCoordinatesWhite[i], y + arrayOfCoordinatesWhite[j]);
-                    if (isMoveLegal(coords, "white", board)) {
+                    if (isMoveLegal(coords, "white", board) && Math.abs(arrayOfCoordinatesWhite[i]) != Math.abs(arrayOfCoordinatesWhite[j])) {
                         legalMoves.add(coords);
                     }
                 }
@@ -920,6 +846,10 @@ public class GameEx {
             int originalWhiteKingY = whitePlayer.kingY;
             int originalBlackKingX = blackPlayer.kingX;
             int originalBlackKingY = blackPlayer.kingY;
+            boolean tempEnpassantB = blackPlayer.canBeEnPassanted;
+            boolean tempEnpassantW = whitePlayer.canBeEnPassanted;
+            String tempVulB = blackPlayer.enPassantVulnerablePawn;
+            String tempVulW = whitePlayer.enPassantVulnerablePawn;
 
             // moves the piece on simulated board
             simulatedBoard.movePiece(move, blackPlayer, whitePlayer);
@@ -942,6 +872,10 @@ public class GameEx {
             blackPlayer.moveSet.addAll(legalMovesB);
             whitePlayer.moveSet.addAll(legalMovesW);
 
+            blackPlayer.canBeEnPassanted = tempEnpassantB;
+            whitePlayer.canBeEnPassanted = tempEnpassantW;
+            blackPlayer.enPassantVulnerablePawn = tempVulB;
+            whitePlayer.enPassantVulnerablePawn = tempVulW;
             // returns the players king's to their original position
             whitePlayer.kingX = originalWhiteKingX;
             whitePlayer.kingY = originalWhiteKingY;
