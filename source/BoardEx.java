@@ -65,7 +65,6 @@ public class BoardEx {
         board[0][4] = BLACKKING;
         board[7][4] = WHITEKING;
 
-        board[4][3] = BLACKPAWN;
         
         this.updateScores();
     }

@@ -140,17 +140,15 @@ public class GameEx {
             }
 
             String coordinates;
-            //hardcoding randomised AI
-            int movesetSize = currentPlayer.moveSet.size();
-            int index = rand.nextInt(movesetSize);
-            coordinates = currentPlayer.moveSet.get(index);
+            // //hardcoding randomised AI
+            // int movesetSize = currentPlayer.moveSet.size();
+            // int index = rand.nextInt(movesetSize);
+            // coordinates = currentPlayer.moveSet.get(index);
 
-            System.out.println(coordinates);
-            /*
+            // System.out.println(coordinates);
             // makes the user input independent of capitalisations
             coordinates = reader.nextLine();
             coordinates = coordinates.toLowerCase();
-            */
             // This iterates through the set of legal moves that a player has. This allows
             // me to restrict moves based on check, instead of just validating moves as they
             // are entered.
